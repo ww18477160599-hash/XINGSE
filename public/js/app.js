@@ -12,6 +12,8 @@ const state = {
   settings: {},
   currentTab: 'prompt', // prompt | canvas | gallery
   history: [],
+  filmstrip: [],
+  selectedFilmstripItem: null,
   isGeneratingLlm: false,
   isGeneratingImage: false,
   activeGroup: 'all'
@@ -100,6 +102,7 @@ function isFieldPartitionActive(fieldId) {
 async function initApp() {
   // 0. 优先绑定全局 DOM 事件与模态框监听，确保任何情况下所有按钮可点击
   bindGlobalEvents();
+  initTheme();
 
   try {
     // 1. 读取设置 (服务端 JSON + 浏览器 localStorage 双重保全)
@@ -290,7 +293,17 @@ function updateSidebarBadges() {
   });
 }
 
-// 控制台全部字段卡片渲染
+// 当前展开的选项浮层
+let currentActivePopover = null;
+
+function closeActivePopover() {
+  if (currentActivePopover) {
+    currentActivePopover.remove();
+    currentActivePopover = null;
+  }
+}
+
+// 控制台全量字段渲染 (超紧凑 3~4 列多列网格矩阵)
 function renderConsole() {
   const container = document.getElementById('console-cards-container') || document.getElementById('console-main-container');
   if (!container) return;
@@ -311,7 +324,7 @@ function renderConsole() {
       <div class="group-title-wrap">
         <h2 class="group-title">
           <span>${group.name}</span>
-          <span class="brand-badge">${group.fields.length} 字段</span>
+          <span class="brand-badge">${group.fields.length} 维度</span>
         </h2>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
@@ -332,11 +345,11 @@ function renderConsole() {
     section.appendChild(header);
 
     const grid = document.createElement('div');
-    grid.className = 'fields-grid';
+    grid.className = 'fields-dense-grid';
 
     group.fields.forEach(field => {
-      const card = renderFieldCard(field);
-      grid.appendChild(card);
+      const tile = renderFieldCapsuleTile(field);
+      grid.appendChild(tile);
     });
 
     section.appendChild(grid);
@@ -344,85 +357,143 @@ function renderConsole() {
   });
 }
 
-// 单个字段卡片渲染
-function renderFieldCard(field) {
-  const card = document.createElement('div');
-  card.className = `field-card ${state.locks[field.id] ? 'is-locked' : ''}`;
-  card.id = `field-card-${field.id}`;
+// 单个紧凑胶囊磁贴渲染
+function renderFieldCapsuleTile(field) {
+  const isLocked = !!(state.locks[field.id] && state.selections[field.id]);
+  const currentVal = state.selections[field.id] || '';
+
+  const tile = document.createElement('div');
+  tile.className = `field-capsule-tile ${isLocked ? 'is-locked' : ''}`;
+  tile.id = `field-card-${field.id}`;
   if (field.activeWhen) {
-    card.dataset.activeWhen = JSON.stringify(field.activeWhen);
+    tile.dataset.activeWhen = JSON.stringify(field.activeWhen);
   }
 
-  const isLocked = !!state.locks[field.id];
-  const selectedVal = state.selections[field.id] || '';
-
-  const fieldHeader = document.createElement('div');
-  fieldHeader.className = 'field-header';
-  fieldHeader.innerHTML = `
-    <div class="field-title-wrap">
-      <span class="field-name">${field.name}</span>
-      <span class="field-id-tag">${field.id}</span>
-      ${field.note ? `<span class="field-note-icon" title="${field.note}">ℹ</span>` : ''}
+  tile.innerHTML = `
+    <div class="capsule-label-wrap" title="${field.note ? field.note + ' · ' : ''}${field.name} (${field.id})">
+      <span class="capsule-field-name">${field.name}</span>
+      <span class="capsule-field-id">${field.id}</span>
     </div>
-    <div class="field-actions">
-      <button class="btn-lock ${isLocked ? 'locked' : ''}" data-field-id="${field.id}" title="${isLocked ? '已锁定（点击解锁）' : '未锁定（留白给AI导演搭配）'}">
-        <span>${isLocked ? '🔒 核心锁定' : '🔓 自由待定'}</span>
-      </button>
-      <button class="btn btn-icon-only btn-random-field" data-field-id="${field.id}" title="仅随机抽取此项（不自动加锁）">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="8" cy="8" r="1.5"/><circle cx="16" cy="16" r="1.5"/><circle cx="12" cy="12" r="1.5"/></svg>
-      </button>
-      <button class="btn btn-icon-only btn-clear-field" data-field-id="${field.id}" title="清空此项选择并解锁">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+    <div class="capsule-value-badge" id="capsule-val-btn-${field.id}" title="点击打开顺滑滚动选项选择器">
+      <span class="capsule-val-text ${currentVal ? '' : 'is-empty'}">${currentVal || '留白搭配'}</span>
+      <span class="capsule-val-arrow">▾</span>
     </div>
+    <button class="capsule-lock-btn ${isLocked ? 'is-locked' : ''}" data-field-id="${field.id}" title="${isLocked ? '已锁定为硬性要求（点击解锁）' : '未锁定（留白给AI导演自由搭配，点击加锁）'}">
+      ${isLocked ? '🔒' : '🔓'}
+    </button>
   `;
-  card.appendChild(fieldHeader);
 
-  const optionsWrap = document.createElement('div');
-  optionsWrap.className = 'options-wrap';
-  optionsWrap.id = `options-wrap-${field.id}`;
-
-  (field.options || []).forEach(opt => {
-    optionsWrap.appendChild(createOptionChip(field, opt, false));
+  // 点击数值区弹出类似模型切换的顺滑滚轮/下拉抽屉
+  const valBadge = tile.querySelector('.capsule-value-badge');
+  valBadge.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openDensePickerPopover(field, tile);
   });
 
-  (field.customOptions || []).forEach(opt => {
-    optionsWrap.appendChild(createOptionChip(field, opt, true));
+  // 点击锁图标直接切换锁定
+  const lockBtn = tile.querySelector('.capsule-lock-btn');
+  lockBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleFieldLock(field.id);
   });
 
-  const addBtn = document.createElement('button');
-  addBtn.className = 'btn-add-option';
-  addBtn.innerHTML = `<span>+ 自建选项</span>`;
-  addBtn.addEventListener('click', () => openAddCustomOptionModal(field.id, field.name));
-  optionsWrap.appendChild(addBtn);
-
-  card.appendChild(optionsWrap);
-  return card;
+  return tile;
 }
 
-// 创建单个选项按钮 (Chip)
-function createOptionChip(field, optName, isCustom = false) {
-  const chip = document.createElement('div');
-  chip.className = `option-chip ${isCustom ? 'custom' : ''}`;
-  chip.dataset.fieldId = field.id;
-  chip.dataset.optName = optName;
-
-  let html = `<span>${optName}</span>`;
-  if (isCustom) {
-    html += `<span class="chip-remove-btn" title="删除自建选项">×</span>`;
+// 打开类似模型切换的顺滑滚动选项选择器 (Picker Popover)
+function openDensePickerPopover(field, tileEl) {
+  if (currentActivePopover && currentActivePopover.dataset.fieldId === field.id) {
+    closeActivePopover();
+    return;
   }
-  chip.innerHTML = html;
+  closeActivePopover();
 
-  chip.addEventListener('click', (e) => {
-    if (e.target.classList.contains('chip-remove-btn')) {
-      e.stopPropagation();
-      handleDeleteCustomOption(field.id, optName);
-      return;
-    }
-    toggleOptionSelect(field, optName);
+  const popover = document.createElement('div');
+  popover.className = 'dense-picker-popover';
+  popover.dataset.fieldId = field.id;
+
+  const currentVal = state.selections[field.id] || '';
+  const allOptions = [...(field.options || []), ...(field.customOptions || [])];
+
+  popover.innerHTML = `
+    <div class="popover-search-wrap">
+      <input type="text" class="popover-search-input" placeholder="🔍 快速检索 ${field.name}..." />
+    </div>
+    <div class="popover-list-scroll"></div>
+    <div class="popover-footer-add">
+      <button class="popover-add-btn">+ 自建选项</button>
+    </div>
+  `;
+
+  const listScroll = popover.querySelector('.popover-list-scroll');
+
+  function renderPopoverList(filterText = '') {
+    listScroll.innerHTML = '';
+
+    // 1. 留白搭配 (清空选择)
+    const emptyItem = document.createElement('div');
+    emptyItem.className = `popover-item is-empty-opt ${!currentVal ? 'selected' : ''}`;
+    emptyItem.innerHTML = `
+      <span>留白待定 (交由 AI 自由搭配)</span>
+      ${!currentVal ? '<span style="color:var(--accent-gold); font-weight:bold;">✓</span>' : ''}
+    `;
+    emptyItem.addEventListener('click', () => {
+      clearField(field.id);
+      closeActivePopover();
+    });
+    listScroll.appendChild(emptyItem);
+
+    // 2. 字段选项列表
+    allOptions.forEach(opt => {
+      if (filterText && !opt.toLowerCase().includes(filterText.toLowerCase())) return;
+      const isSelected = isOptionSelected(field.id, opt, field.type);
+      const isCustom = (field.customOptions || []).includes(opt);
+
+      const item = document.createElement('div');
+      item.className = `popover-item ${isSelected ? 'selected' : ''}`;
+      item.innerHTML = `
+        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${opt}${isCustom ? ' (自建)' : ''}</span>
+        <div style="display:flex; align-items:center; gap:6px;">
+          ${isSelected ? '<span style="color:var(--accent-gold); font-weight:bold;">✓</span>' : ''}
+          ${isCustom ? `<span class="popover-del-opt" title="删除自建选项" style="color:var(--text-muted); cursor:pointer; font-size:0.8rem; padding:0 3px;">×</span>` : ''}
+        </div>
+      `;
+
+      item.addEventListener('click', (e) => {
+        if (e.target.classList.contains('popover-del-opt')) {
+          e.stopPropagation();
+          handleDeleteCustomOption(field.id, opt);
+          closeActivePopover();
+          return;
+        }
+        toggleOptionSelect(field, opt);
+        closeActivePopover();
+      });
+
+      listScroll.appendChild(item);
+    });
+  }
+
+  renderPopoverList();
+
+  // 搜索框过滤事件
+  const searchInput = popover.querySelector('.popover-search-input');
+  searchInput.addEventListener('input', (e) => {
+    renderPopoverList(e.target.value.trim());
+  });
+  searchInput.addEventListener('click', (e) => e.stopPropagation());
+
+  // + 自建选项
+  const addBtn = popover.querySelector('.popover-add-btn');
+  addBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeActivePopover();
+    openAddCustomOptionModal(field.id, field.name);
   });
 
-  return chip;
+  tileEl.appendChild(popover);
+  currentActivePopover = popover;
+  setTimeout(() => searchInput.focus(), 60);
 }
 
 // 检查是否选中
@@ -473,35 +544,34 @@ function toggleOptionSelect(field, optName) {
   saveSelectionsToLocal();
 }
 
-// 刷新指定卡片内 chips 选中样式
+// 刷新指定胶囊磁贴内文字
 function refreshFieldCardChips(fieldId) {
-  const wrap = document.getElementById(`options-wrap-${fieldId}`);
-  if (!wrap) return;
-  const field = state.fieldsMap[fieldId];
-  if (!field) return;
-
-  const chips = wrap.querySelectorAll('.option-chip');
-  chips.forEach(chip => {
-    const optName = chip.dataset.optName;
-    if (isOptionSelected(fieldId, optName, field.type)) {
-      chip.classList.add('selected');
+  const card = document.getElementById(`field-card-${fieldId}`);
+  if (!card) return;
+  const valText = card.querySelector('.capsule-val-text');
+  if (valText) {
+    const val = state.selections[fieldId];
+    if (val) {
+      valText.textContent = val;
+      valText.classList.remove('is-empty');
     } else {
-      chip.classList.remove('selected');
+      valText.textContent = '留白搭配';
+      valText.classList.add('is-empty');
     }
-  });
+  }
 }
 
-// 刷新指定卡片的锁状态样式与徽章
+// 刷新指定磁贴锁状态样式与图标
 function refreshFieldCardLockState(fieldId) {
   const card = document.getElementById(`field-card-${fieldId}`);
   if (!card) return;
   const isLocked = !!(state.locks[fieldId] && state.selections[fieldId]);
   card.classList.toggle('is-locked', isLocked);
-  const btn = card.querySelector('.btn-lock');
+  const btn = card.querySelector('.capsule-lock-btn');
   if (btn) {
-    btn.classList.toggle('locked', isLocked);
-    btn.innerHTML = `<span>${isLocked ? '🔒 核心锁定' : '🔓 自由待定'}</span>`;
-    btn.title = isLocked ? '已锁定为硬性要求（AI搭配时必保留）' : '未锁定（留白给AI导演自由发挥搭配）';
+    btn.classList.toggle('is-locked', isLocked);
+    btn.textContent = isLocked ? '🔒' : '🔓';
+    btn.title = isLocked ? '已锁定为硬性要求（点击解锁）' : '未锁定（留白给AI导演自由发挥搭配，点击加锁）';
   }
 }
 
@@ -688,9 +758,24 @@ function updatePromptBoxStatus() {
   }
 }
 
-// 更新状态总览数字
+// 更新顶部监控状态条与锁定总览
 function updateStatusSummary() {
   const lockedKeys = Object.keys(state.locks).filter(k => state.locks[k] && state.selections[k] && isFieldPartitionActive(k));
+  
+  // 1. 同步新版极简状态带
+  const lockTextEl = document.getElementById('header-lock-text');
+  if (lockTextEl) {
+    lockTextEl.textContent = `已锁定 ${lockedKeys.length} 项核心`;
+  }
+
+  const ar = state.selections['aspect_ratio'] || '1:1';
+  const info = XingSeDirector.getActualSubmitSizeInfo(ar);
+  const aspectTextEl = document.getElementById('header-aspect-text');
+  if (aspectTextEl) {
+    aspectTextEl.textContent = `${ar} · ${info.label}`;
+  }
+
+  // 2. 兼容旧版摘要徽章
   const summaryEl = document.getElementById('header-summary-badge');
   if (summaryEl) {
     summaryEl.innerHTML = `
@@ -698,6 +783,20 @@ function updateStatusSummary() {
       <span>锁定池 ${lockedKeys.length} 项生效 · 其余AI导演搭配</span>
     `;
   }
+}
+
+// 主题切换管理 (黑金 obsidian / 冷瓷 ceramic / 绯红 crimson)
+function initTheme() {
+  const savedTheme = localStorage.getItem('xingse_theme') || 'obsidian';
+  setTheme(savedTheme);
+}
+
+function setTheme(theme) {
+  document.body.dataset.theme = theme;
+  localStorage.setItem('xingse_theme', theme);
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
 }
 
 // 顶栏全部解锁 (清空锁定池)
@@ -1301,6 +1400,23 @@ async function handleGenerateImage() {
       locks: state.locks
     });
 
+    // 胶卷底片轴同步新增
+    const filmstripItem = {
+      id: Date.now(),
+      displayUrl: res.localUrl || res.imageUrl,
+      imageUrl: res.imageUrl,
+      title: res.title || projectTitle,
+      savedFile: res.savedFile || '',
+      savedPath: res.savedPath || '',
+      actualPrompt: prompt,
+      selections: { ...state.selections },
+      locks: { ...state.locks }
+    };
+    state.filmstrip.unshift(filmstripItem);
+    if (state.filmstrip.length > 12) state.filmstrip.pop();
+    state.selectedFilmstripItem = filmstripItem;
+    renderFilmstrip();
+
     loadGallery();
   } catch (err) {
     clearInterval(timerInterval);
@@ -1319,6 +1435,58 @@ async function handleGenerateImage() {
     }
     updatePromptBoxStatus();
   }
+}
+
+// 渲染底片胶卷轴 (Filmstrip Ribbon)
+function renderFilmstrip() {
+  const scrollEl = document.getElementById('filmstrip-scroll');
+  const countEl = document.getElementById('filmstrip-count');
+  const quickBar = document.getElementById('quick-iteration-bar');
+  if (!scrollEl) return;
+
+  if (countEl) countEl.textContent = `${state.filmstrip.length} 张底片`;
+
+  if (state.filmstrip.length === 0) {
+    scrollEl.innerHTML = '<div style="font-size:0.75rem; color:var(--text-muted); padding:6px 0;">出图后将在此生成胶卷序列...</div>';
+    if (quickBar) quickBar.style.display = 'none';
+    return;
+  }
+
+  scrollEl.innerHTML = '';
+  state.filmstrip.forEach(item => {
+    const thumb = document.createElement('div');
+    const isActive = state.selectedFilmstripItem?.id === item.id;
+    thumb.className = `filmstrip-thumb ${isActive ? 'active' : ''}`;
+    thumb.title = `《${item.title}》· 点击切换对比并支持快捷微调`;
+    thumb.innerHTML = `<img src="${item.displayUrl || item.imageUrl}" alt="${item.title}" />`;
+
+    thumb.addEventListener('click', () => {
+      state.selectedFilmstripItem = item;
+      document.querySelectorAll('.filmstrip-thumb').forEach(t => t.classList.remove('active'));
+      thumb.classList.add('active');
+      if (quickBar) quickBar.style.display = 'flex';
+
+      // 画布上同步预览此张底片
+      const canvasImg = document.getElementById('canvas-image');
+      const canvasEmpty = document.getElementById('canvas-empty');
+      const footerBar = document.getElementById('canvas-footer-bar');
+      const fileNameEl = document.getElementById('canvas-file-name');
+      const filePathEl = document.getElementById('canvas-file-path');
+
+      if (canvasImg) {
+        canvasImg.src = item.displayUrl || item.imageUrl;
+        canvasImg.style.display = 'block';
+        canvasImg.dataset.title = item.title;
+        canvasImg.dataset.file = item.savedFile || '';
+      }
+      if (canvasEmpty) canvasEmpty.style.display = 'none';
+      if (footerBar) footerBar.style.display = 'flex';
+      if (fileNameEl && item.savedFile) fileNameEl.textContent = `当前底片: ${item.savedFile}`;
+      if (filePathEl && item.savedPath) filePathEl.textContent = item.savedPath;
+    });
+
+    scrollEl.appendChild(thumb);
+  });
 }
 
 // 全屏大图灯箱控制器
@@ -1390,6 +1558,24 @@ async function loadGallery() {
   try {
     const history = await ApiService.getHistory();
     state.history = history;
+
+    // 初始底片胶卷填充
+    if (history.length > 0 && state.filmstrip.length === 0) {
+      state.filmstrip = history.slice(0, 10).map(h => ({
+        id: h.timestamp || Date.now() + Math.random(),
+        displayUrl: h.displayUrl || h.localUrl || h.imageUrl || '',
+        imageUrl: h.imageUrl || '',
+        title: h.title || '摄影作品',
+        savedFile: h.savedFile || '',
+        savedPath: h.savedPath || '',
+        actualPrompt: h.actualPrompt || h.promptZh || '',
+        selections: h.selections || {},
+        locks: h.locks || {}
+      }));
+      state.selectedFilmstripItem = state.filmstrip[0];
+      renderFilmstrip();
+    }
+
     const grid = document.getElementById('gallery-grid');
     if (!grid) return;
     grid.innerHTML = '';
@@ -1735,9 +1921,56 @@ function bindGlobalEvents() {
     });
   }
 
-  // 键盘快捷键监听 (Esc 关闭灯箱与模态框)
+  // 顶栏主题配色切换
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTheme(btn.dataset.theme);
+      showToast(`已切换至「${btn.title.split(' ')[0]}」主题`, 'info');
+    });
+  });
+
+  // 底片胶卷轴快速微调
+  document.getElementById('btn-quick-rematch')?.addEventListener('click', () => {
+    if (!state.selectedFilmstripItem) return;
+    const item = state.selectedFilmstripItem;
+    state.selections = { ...(item.selections || {}) };
+    state.locks = { ...(item.locks || {}) };
+    state.allFields.forEach(f => {
+      refreshFieldCardChips(f.id);
+      refreshFieldCardLockState(f.id);
+    });
+    updateActiveConditionals();
+    renderLockPool();
+    updateAspectRatioDisplay();
+    updateStatusSummary();
+    updateSidebarBadges();
+    saveSelectionsToLocal();
+    switchWorkspaceTab('prompt');
+    handleAiDirectorMatch();
+  });
+
+  document.getElementById('btn-quick-regenerate')?.addEventListener('click', () => {
+    if (!state.selectedFilmstripItem) return;
+    const item = state.selectedFilmstripItem;
+    const mainPromptBox = document.getElementById('main-prompt-box');
+    const titleInput = document.getElementById('project-title');
+    if (mainPromptBox) mainPromptBox.value = item.actualPrompt || '';
+    if (titleInput) titleInput.value = item.title || '形色摄影作品';
+    updatePromptBoxStatus();
+    handleGenerateImage();
+  });
+
+  // 点击外部自动收起顺滑选项抽屉
+  document.addEventListener('click', (e) => {
+    if (currentActivePopover && !e.target.closest('.dense-picker-popover') && !e.target.closest('.capsule-value-badge')) {
+      closeActivePopover();
+    }
+  });
+
+  // 键盘快捷键监听 (Esc 关闭灯箱、抽屉与模态框)
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      closeActivePopover();
       closeLightbox();
       closeModal('settings-modal');
       closeModal('add-custom-modal');

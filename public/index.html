@@ -18,52 +18,51 @@
         </svg>
       </div>
       <div class="brand-title">形色 XINGSE</div>
-      <div class="brand-badge">V0.62.7 摄影导演级</div>
+      <div class="brand-badge" id="app-version-badge">Studio Pro v0.7.0</div>
     </div>
 
-    <!-- 快捷抽卡与控制操作 -->
-    <div class="header-actions">
-      <button class="btn btn-secondary" id="btn-toggle-console" title="收起或展开选项控制台，将主要空间让给提示词工作区">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-        <span id="btn-toggle-console-text">收起控制台</span>
-      </button>
+    <!-- 顶部状态摘要与主题切换栏 (取代旧版杂乱大按钮) -->
+    <div class="header-status-strip">
+      <div class="status-strip-item" id="header-lock-status" title="当前核心锁定参数数量">
+        <span class="status-strip-dot"></span>
+        <span class="status-strip-text" id="header-lock-text">已锁定 0 项核心</span>
+      </div>
+      <div class="status-strip-item" id="header-aspect-status" title="当前选择的画幅">
+        <span class="status-strip-icon">📐</span>
+        <span class="status-strip-text" id="header-aspect-text">16:10 · 1440×900</span>
+      </div>
+      <div class="status-strip-item" id="api-status-badge" title="当前生图与大模型 API 就绪状态">
+        <span class="status-dot"></span>
+        <span id="api-status-text">API 就绪</span>
+      </div>
+    </div>
 
-      <button class="btn btn-secondary" id="btn-random-sample" title="保留锁定项，从未锁定的选项库中随机采样（不自动加锁）">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="8" cy="8" r="1.5"/><circle cx="16" cy="16" r="1.5"/><circle cx="12" cy="12" r="1.5"/></svg>
-        <span>库内随机</span>
+    <!-- 主题配色切换器 (黑金 · 冷瓷 · 绯红) -->
+    <div class="theme-switcher-bar" title="切换工作台高级视觉主题">
+      <button class="theme-btn active" data-theme="obsidian" title="黑金导演 (沉浸深黑 · 经典导演舱)">
+        <span class="theme-dot" style="background:#0a0a0c; border:1px solid #d4af37;"></span>
+        <span>黑金</span>
       </button>
-
-      <button class="btn btn-primary" id="btn-director-match" title="以当前生效的锁定池为硬性条件，由AI摄影导演美学搭配协调其他未锁定维度">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <span>🎬 搭配</span>
+      <button class="theme-btn" data-theme="ceramic" title="冷瓷白 (极简清爽 · 明亮工作室)">
+        <span class="theme-dot" style="background:#f4f6fa; border:1px solid #b8c4d9;"></span>
+        <span>冷瓷</span>
       </button>
-
-      <button class="btn btn-secondary" id="btn-unlock-all" title="解除全部锁定条件">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-        <span>全部解锁</span>
-      </button>
-
-      <button class="btn btn-secondary" id="btn-reset-all" title="清空全部选择与锁定">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
-        <span>重置控制台</span>
+      <button class="theme-btn" data-theme="crimson" title="绯红夜行 (先锋红黑 · 浓郁胶片)">
+        <span class="theme-dot" style="background:#14080b; border:1px solid #e11d48;"></span>
+        <span>绯红</span>
       </button>
     </div>
 
     <!-- 右侧系统状态与 API 配置入口 -->
     <div class="header-status">
-      <div class="status-badge" id="header-summary-badge" title="已锁定的核心参数池">
-        <span class="status-dot"></span>
-        <span>锁定 0 项核心 · 其余AI搭配</span>
-      </div>
+      <button class="btn btn-secondary btn-sm" id="btn-toggle-console" title="收起或展开左侧与选项控制台，给画布最大空间">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        <span id="btn-toggle-console-text">收起控制台</span>
+      </button>
 
-      <div class="status-badge" id="api-status-badge" title="当前 API 就绪状态">
-        <span class="status-dot"></span>
-        <span>API 读取中...</span>
-      </div>
-
-      <button class="btn btn-secondary" id="btn-open-settings">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>API 接口设置</span>
+      <button class="btn btn-secondary btn-sm" id="btn-open-settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>API 设置</span>
       </button>
     </div>
   </header>
@@ -95,9 +94,21 @@
             <span class="lock-pool-count-badge" id="lock-pool-count-badge">0 项已锁</span>
           </div>
           <div class="lock-pool-actions">
-            <span class="lock-pool-hint">自主选择或自建即入池 · 搭配与随机不自动入锁</span>
-            <button class="btn btn-secondary btn-sm" id="btn-lock-pool-unlock-all" title="解除当前全部锁定">
+            <button class="btn btn-secondary btn-sm" id="btn-random-sample" title="保留锁定项，从未锁定的选项库中随机采样（不自动加锁）">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="8" cy="8" r="1.5"/><circle cx="16" cy="16" r="1.5"/><circle cx="12" cy="12" r="1.5"/></svg>
+              <span>库内随机</span>
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-director-match" title="以当前生效的锁定池为硬性条件，由AI摄影导演美学搭配协调其他未锁定维度">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>🎬 搭配</span>
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-unlock-all" title="解除当前全部锁定条件">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
               <span>全部解锁</span>
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-reset-all" title="清空全部选择与锁定">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+              <span>重置</span>
             </button>
           </div>
         </div>
@@ -246,6 +257,22 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 <span>另存为</span>
               </button>
+            </div>
+          </div>
+
+          <!-- 底片胶卷轴与快速微调栏 (Filmstrip Ribbon) -->
+          <div class="filmstrip-section" id="filmstrip-section">
+            <div class="filmstrip-header">
+              <span class="filmstrip-title">🎞️ 最近底片胶卷 (点击快速对比与复原)</span>
+              <span class="filmstrip-hint" id="filmstrip-count">0 张底片</span>
+            </div>
+            <div class="filmstrip-scroll" id="filmstrip-scroll">
+              <div style="font-size:0.75rem; color:var(--text-muted); padding:6px 0;">出图后将在此生成胶卷序列...</div>
+            </div>
+            <div class="quick-iteration-bar" id="quick-iteration-bar" style="display:none;">
+              <span class="quick-iter-label">当前底片快捷微调：</span>
+              <button class="btn btn-secondary btn-sm" id="btn-quick-rematch">🎬 重新搭配未锁项</button>
+              <button class="btn btn-accent btn-sm" id="btn-quick-regenerate">⚡ 原参数再出一张</button>
             </div>
           </div>
         </div>

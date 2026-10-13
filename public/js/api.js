@@ -293,43 +293,107 @@ const ApiService = {
     const data = await r.json();
     const url = data.data?.[0]?.url || (data.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : '');
     if (!url) throw new Error('未获取到生成的图片地址');
+    let localPath = url;
+    let savedSuccess = false;
+    let savedPath = '';
+    let savedFile = '';
+    try {
+      const saveRes = await ApiService.saveLocalImage(url, title);
+      if (saveRes && (saveRes.savedPath || saveRes.localPath)) {
+        savedSuccess = true;
+        savedPath = saveRes.savedPath || saveRes.localPath || '';
+        savedFile = saveRes.filename || '';
+        localPath = savedPath || url;
+      }
+    } catch (e) {
+      console.warn('Auto save local image failed:', e);
+    }
+
     return {
       success: true,
       imageUrl: url,
-      localPath: url,
+      localPath: localPath,
+      savedSuccess: savedSuccess,
+      savedPath: savedPath,
+      savedFile: savedFile,
       title: title || '摄影作品',
       prompt: prompt
     };
   },
 
-  // 5.2 单独重试保存图片到本地
+  // 5.2 保存图片到本地 (Tauri 原生 Rust 直写 + 服务端兜底)
   async saveLocalImage(imageUrl, title) {
+    const settings = await ApiService.getSettings();
+    const saveDir = (settings.savePath || 'D:\\xingsepic').trim();
+    const cleanTitle = (title || '摄影作品').replace(/[\\/:*?"<>|]/g, '_').trim();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = `${cleanTitle}_${timestamp}.png`;
+
+    // 优先尝试 Tauri 原生指令
+    if (window.__TAURI__?.core?.invoke) {
+      try {
+        const sp = await window.__TAURI__.core.invoke('save_image_to_disk', {
+          imageDataOrUrl: imageUrl,
+          saveDir: saveDir,
+          filename: filename
+        });
+        return { success: true, savedPath: sp, filename };
+      } catch (err) {
+        console.warn('Tauri invoke save_image_to_disk failed:', err);
+      }
+    }
+
+    // Node 服务端落盘兜底
     try {
       const res = await fetch('/api/image/save-local', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl, title })
+        body: JSON.stringify({ imageUrl, title, savePath: saveDir })
       });
       if (res.ok) return await res.json();
     } catch (e) {}
+
     return { success: true, localPath: imageUrl };
   },
 
-  // 5.5 打开本地文件夹
+  // 5.5 打开本地文件夹 (Tauri 原生 Explorer + 服务端兜底)
   async openFolder(folder) {
+    const settings = await ApiService.getSettings();
+    const targetFolder = (folder || settings.savePath || 'D:\\xingsepic').trim();
+
+    if (window.__TAURI__?.core?.invoke) {
+      try {
+        await window.__TAURI__.core.invoke('open_folder', { path: targetFolder });
+        return { success: true };
+      } catch (err) {
+        console.warn('Tauri invoke open_folder failed:', err);
+      }
+    }
+
     try {
       const res = await fetch('/api/open-folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder: folder || '' })
+        body: JSON.stringify({ folder: targetFolder })
       });
       if (res.ok) return await res.json();
     } catch (e) {}
     return { success: true };
   },
 
-  // 5.6 弹窗选择本地文件夹
+  // 5.6 弹窗选择本地文件夹 (Tauri 原生 FolderDialog + 服务端兜底)
   async selectFolder(initialPath) {
+    if (window.__TAURI__?.core?.invoke) {
+      try {
+        const selected = await window.__TAURI__.core.invoke('select_folder', {
+          initialPath: initialPath || ''
+        });
+        if (selected) return { path: selected };
+      } catch (err) {
+        console.warn('Tauri invoke select_folder failed:', err);
+      }
+    }
+
     try {
       const res = await fetch('/api/select-folder', {
         method: 'POST',
@@ -338,7 +402,7 @@ const ApiService = {
       });
       if (res.ok) return await res.json();
     } catch (e) {}
-    return { path: initialPath || './outputs' };
+    return { path: initialPath || 'D:\\xingsepic' };
   },
 
   // 6. 历史记录
