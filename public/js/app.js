@@ -921,21 +921,18 @@ async function handleAddCustomOptionSubmit() {
     const res = await ApiService.addCustomOption(currentAddCustomFieldId, val);
     const field = state.fieldsMap[currentAddCustomFieldId];
     if (field) {
-      field.customOptions = res.customOptions;
+      field.customOptions = res.customOptions || [val];
 
-      const wrap = document.getElementById(`options-wrap-${currentAddCustomFieldId}`);
-      if (wrap) {
-        const addBtn = wrap.querySelector('.btn-add-option');
-        const newChip = createOptionChip(field, val, true);
-        wrap.insertBefore(newChip, addBtn);
-      }
+      // 立即重新渲染胶囊按钮与抽屉选项列表
+      renderFieldCardCapsule(currentAddCustomFieldId);
 
-      // 自动选中并锁定此项
+      // 自动选中并加入锁定池
       toggleOptionSelect(field, val);
+      saveSelectionsToLocal();
     }
 
     closeModal('add-custom-modal');
-    showToast(`已成功添加「${val}」并加入锁定池`, 'success');
+    showToast(`已成功添加「${val}」并扩充到软件选项库！`, 'success');
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -948,22 +945,12 @@ async function handleDeleteCustomOption(fieldId, optName) {
     const res = await ApiService.deleteCustomOption(fieldId, optName);
     const field = state.fieldsMap[fieldId];
     if (field) {
-      field.customOptions = res.customOptions;
+      field.customOptions = res.customOptions || [];
       if (state.selections[fieldId] === optName) {
         delete state.selections[fieldId];
         delete state.locks[fieldId];
       }
-      const wrap = document.getElementById(`options-wrap-${fieldId}`);
-      if (wrap) {
-        wrap.innerHTML = '';
-        field.options.forEach(opt => wrap.appendChild(createOptionChip(field, opt, false)));
-        (field.customOptions || []).forEach(opt => wrap.appendChild(createOptionChip(field, opt, true)));
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn-add-option';
-        addBtn.innerHTML = `<span>+ 自建选项</span>`;
-        addBtn.addEventListener('click', () => openAddCustomOptionModal(field.id, field.name));
-        wrap.appendChild(addBtn);
-      }
+      renderFieldCardCapsule(fieldId);
       updateActiveConditionals();
       renderLockPool();
       updateStatusSummary();

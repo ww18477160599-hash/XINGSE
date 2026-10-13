@@ -17,71 +17,80 @@ const ApiService = {
     // 内置离线完整选项库
     if (window.DEFAULT_OPTIONS_DATA) {
       const base = JSON.parse(JSON.stringify(window.DEFAULT_OPTIONS_DATA));
-      // 合并本地自建选项
+      // 合并本地自建选项至各字段的 customOptions 中 (永久保存)
       try {
         const localCustom = JSON.parse(localStorage.getItem('xingse_custom_options') || '{}');
-        Object.keys(localCustom).forEach(fieldId => {
-          const customArr = localCustom[fieldId] || [];
-          base.groups.forEach(g => {
-            const field = g.fields.find(f => f.id === fieldId);
-            if (field) {
-              customArr.forEach(cOpt => {
-                if (!field.options.find(o => o.name === cOpt.name)) {
-                  field.options.push(cOpt);
-                }
-              });
-            }
+        base.groups.forEach(g => {
+          g.fields.forEach(field => {
+            const rawArr = localCustom[field.id] || [];
+            const cleanCustoms = rawArr.map(item => (typeof item === 'string' ? item : item.name || '')).filter(Boolean);
+            field.customOptions = Array.from(new Set([...(field.customOptions || []), ...cleanCustoms]));
           });
         });
-      } catch (err) {}
+      } catch (err) {
+        console.warn('Merge local custom options error:', err);
+      }
       return base;
     }
     throw new Error('未检测到选项库数据');
   },
 
-  // 2. 自建选项
+  // 2. 自建选项 (持久化扩充到软件库)
   async addCustomOption(fieldId, optionName) {
+    const cleanOpt = (optionName || '').trim();
+    if (!cleanOpt) throw new Error('选项名称不能为空');
+
     try {
       const res = await fetch('/api/custom-options', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fieldId, optionName })
+        body: JSON.stringify({ fieldId, optionName: cleanOpt })
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.customOptions) return data;
+      }
     } catch (e) {}
 
-    // 本地存储兜底
+    // 本地持久化储存
     try {
       const localCustom = JSON.parse(localStorage.getItem('xingse_custom_options') || '{}');
-      if (!localCustom[fieldId]) localCustom[fieldId] = [];
-      const newOpt = { id: `custom_${Date.now()}`, name: optionName, desc: '自建创意选项', isCustom: true };
-      localCustom[fieldId].push(newOpt);
+      if (!Array.isArray(localCustom[fieldId])) localCustom[fieldId] = [];
+      const currentArr = localCustom[fieldId].map(o => (typeof o === 'string' ? o : o.name || '')).filter(Boolean);
+      if (!currentArr.includes(cleanOpt)) {
+        currentArr.push(cleanOpt);
+      }
+      localCustom[fieldId] = currentArr;
       localStorage.setItem('xingse_custom_options', JSON.stringify(localCustom));
-      return { success: true, option: newOpt };
+      return { success: true, option: cleanOpt, customOptions: currentArr };
     } catch (err) {
-      throw new Error('保存自建选项失败');
+      throw new Error('保存自建选项失败: ' + err.message);
     }
   },
 
   async deleteCustomOption(fieldId, optionName) {
+    const cleanOpt = (optionName || '').trim();
     try {
       const res = await fetch('/api/custom-options', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fieldId, optionName })
+        body: JSON.stringify({ fieldId, optionName: cleanOpt })
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.customOptions) return data;
+      }
     } catch (e) {}
 
     try {
       const localCustom = JSON.parse(localStorage.getItem('xingse_custom_options') || '{}');
-      if (localCustom[fieldId]) {
-        localCustom[fieldId] = localCustom[fieldId].filter(o => o.name !== optionName);
-        localStorage.setItem('xingse_custom_options', JSON.stringify(localCustom));
-      }
-      return { success: true };
+      let currentArr = (localCustom[fieldId] || []).map(o => (typeof o === 'string' ? o : o.name || '')).filter(Boolean);
+      currentArr = currentArr.filter(o => o !== cleanOpt);
+      localCustom[fieldId] = currentArr;
+      localStorage.setItem('xingse_custom_options', JSON.stringify(localCustom));
+      return { success: true, customOptions: currentArr };
     } catch (err) {
-      throw new Error('删除自建选项失败');
+      throw new Error('删除自建选项失败: ' + err.message);
     }
   },
 
@@ -179,14 +188,17 @@ const ApiService = {
 【形色摄影导演核心工作铁律】：
 1. 锁定条件保留（绝对硬性约束）：
    用户指定的所有锁定条件（格式如「分组·字段名＝值」）为铁律，你必须100%严格保留、贯彻并在画面中重点呈现，绝对不得擅自篡改、削弱或丢弃。
-2. 留白美学协调：
-   未锁定的维度交由你作为摄影导演自由搭配，协调人物骨相五官、肌肤原生纹理（真实微光与光学质感，告别塑料磨皮假感）、动作主辅支点受力与重心平衡、空间纵深、现场照明光位色温及镜头视角焦段。
+2. 留白美学与空间平衡：
+   未锁定的维度交由你作为摄影导演自由搭配，协调人物骨相五官、动作主辅支点受力与重心平衡、空间纵深、现场照明光位色温及镜头视角焦段。
 3. 服装分区严谨：
    严格根据服装形式（上下装 vs 一体装）协调各层衣片、面料织物纤维质感、剪裁褶皱与垂坠感，停用分区的字段绝对不混入画面。
 4. 物理承重与空间接触：
    模特姿态必须明确主辅支点（椅背、桌沿、地面等），身体与物体接触有真实物理受力形变，严禁悬空穿模。
 5. 七维近期去重与全新命名：
    若用户附带了近期方案特征或当前片名，请确保本次方案在「人物骨相五官、服装搭配、动作支撑、构图关系、机位焦段、光影调性、情绪张力」中至少有4个可变维度产生显著新颖变化，且必须赋予一个全新的意境片名，拒绝同脸模板与同质化套路。
+6. 极致人物质感与皮肤光学真实度（核心灵魂·彻底告别塑料磨皮假感）：
+   画面必须以顶级单反相机（如哈苏中画幅/索尼A7R5 + 85mm f/1.4 原生实拍光圈）的光学质感为准绳，严禁塑料硅胶假人感、千篇一律滤镜脸与廉价CG磨皮：
+   提示词中必须重点细腻描绘原生皮肤的真实微观光学特征——逆光侧光下通透细腻的原生微绒、真实皮脂微光漫反射、鼻翼与眼周细微真实的毛细血管与原生肤色起伏、锁骨与肩颈真实自然的骨肉阴影、呼吸起伏的毛孔肌理与微汗光泽，呈现充满生命力的顶级电影胶片与 RAW 格式直出质感。
 
 请严格按以下两段格式输出，不要输出任何多余的客套前言寒暄：
 【作品企划标题】
