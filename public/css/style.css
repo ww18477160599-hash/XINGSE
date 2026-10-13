@@ -1489,8 +1489,8 @@ body[data-theme="crimson"] {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(0, 0, 0, 0.25);
-  padding: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 3px 6px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-subtle);
 }
@@ -1499,21 +1499,27 @@ body[data-theme="crimson"] {
   background: transparent;
   border: none;
   border-radius: var(--radius-pill);
-  padding: 4px 8px;
-  font-size: 0.85rem;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
   cursor: pointer;
-  opacity: 0.6;
   transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .theme-btn:hover {
-  opacity: 1;
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .theme-btn.active {
   background: var(--accent-gold);
-  opacity: 1;
-  box-shadow: 0 0 10px var(--accent-gold-glow);
+  color: #0b0d13;
+  font-weight: 700;
+  box-shadow: 0 0 12px var(--accent-gold-glow);
 }
 
 /* 3. 中栏：超紧凑多列矩阵网格 (3~4列自适应) */
@@ -1633,34 +1639,71 @@ body[data-theme="crimson"] {
   opacity: 1;
 }
 
-/* 4. 顺滑下拉轮盘选择器 (Picker Popover) */
-.dense-picker-popover {
-  position: absolute;
-  top: 44px;
-  left: 0;
-  right: 0;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-md);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  max-height: 250px;
-  overflow: hidden;
-  backdrop-filter: blur(20px);
-  animation: popoverFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+/* 激活展开选项时的胶囊磁贴：层级提升至最顶层，杜绝下排元素穿透遮挡 */
+.field-capsule-tile.has-open-popover {
+  z-index: 1000 !important;
+  border-color: var(--accent-gold) !important;
+  box-shadow: 0 0 16px var(--accent-gold-glow) !important;
 }
 
-@keyframes popoverFadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
+/* 4. 顺滑选项选择器 (Picker Popover) - 100% 实体纯黑底色，彻底杜绝文字穿透 */
+.dense-picker-popover {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  min-width: 230px;
+  width: 100%;
+  background: #0d1017 !important; /* 彻底实心纯正黑，绝不透底 */
+  border: 1px solid var(--accent-gold);
+  border-radius: var(--radius-md);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 16px rgba(245, 158, 11, 0.25);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  overflow: hidden;
+  animation: popoverFadeInDown 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 向上浮起弹出模式 (当磁贴在卡片中下排或下方空间不足时自动采用) */
+.dense-picker-popover.popover-upward {
+  top: auto;
+  bottom: calc(100% + 5px);
+  box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.95), 0 0 16px rgba(245, 158, 11, 0.25);
+  animation: popoverFadeInUp 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 主题适配实心底色 */
+body[data-theme="ceramic"] .dense-picker-popover {
+  background: #ffffff !important;
+  border-color: var(--accent-gold);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.22), 0 0 12px rgba(37, 99, 235, 0.2);
+}
+
+body[data-theme="crimson"] .dense-picker-popover {
+  background: #180910 !important;
+  border-color: var(--accent-gold);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 16px rgba(244, 63, 94, 0.3);
+}
+
+@keyframes popoverFadeInDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popoverFadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .popover-search-wrap {
-  padding: 6px 8px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+body[data-theme="ceramic"] .popover-search-wrap {
+  background: #f1f5f9;
 }
 
 .popover-search-input {
@@ -1668,14 +1711,15 @@ body[data-theme="crimson"] {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 0.75rem;
+  padding: 5px 8px;
+  font-size: 0.78rem;
   color: var(--text-primary);
   outline: none;
 }
 
 .popover-search-input:focus {
   border-color: var(--accent-gold);
+  box-shadow: 0 0 8px var(--accent-gold-glow);
 }
 
 .popover-list-scroll {
@@ -1689,16 +1733,16 @@ body[data-theme="crimson"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
+  padding: 7px 12px;
   border-radius: 4px;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
   cursor: pointer;
   transition: var(--transition-fast);
 }
 
 .popover-item:hover {
-  background: var(--bg-card-hover);
+  background: rgba(245, 158, 11, 0.15);
   color: var(--text-primary);
 }
 

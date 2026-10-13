@@ -298,6 +298,9 @@ let currentActivePopover = null;
 
 function closeActivePopover() {
   if (currentActivePopover) {
+    if (currentActivePopover.parentElement) {
+      currentActivePopover.parentElement.classList.remove('has-open-popover');
+    }
     currentActivePopover.remove();
     currentActivePopover = null;
   }
@@ -491,6 +494,15 @@ function openDensePickerPopover(field, tileEl) {
     openAddCustomOptionModal(field.id, field.name);
   });
 
+  // 智能朝向判定：若磁贴下方可用视口空间不足 270px，或位于卡片中下排，则自动向上浮现（显示在上方）！
+  const rect = tileEl.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  if (spaceBelow < 270 || (spaceAbove > 270 && rect.top > window.innerHeight * 0.42)) {
+    popover.classList.add('popover-upward');
+  }
+
+  tileEl.classList.add('has-open-popover');
   tileEl.appendChild(popover);
   currentActivePopover = popover;
   setTimeout(() => searchInput.focus(), 60);
