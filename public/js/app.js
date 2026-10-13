@@ -98,6 +98,9 @@ function isFieldPartitionActive(fieldId) {
 
 // 初始化应用
 async function initApp() {
+  // 0. 优先绑定全局 DOM 事件与模态框监听，确保任何情况下所有按钮可点击
+  bindGlobalEvents();
+
   try {
     // 1. 读取设置 (服务端 JSON + 浏览器 localStorage 双重保全)
     try {
@@ -121,7 +124,7 @@ async function initApp() {
 
     populateSettingsForm();
 
-    // 2. 读取完整选项
+    // 2. 读取完整选项 (带内置离线数据库兜底)
     const data = await ApiService.fetchOptions();
     state.groups = data.groups || [];
 
@@ -161,10 +164,7 @@ async function initApp() {
     updatePromptBoxStatus();
     updateStatusSummary();
 
-    // 5. 绑定全局事件
-    bindGlobalEvents();
-
-    // 6. 加载历史画廊
+    // 5. 加载历史画廊
     loadGallery();
 
     window.scrollTo(0, 0);
