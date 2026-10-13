@@ -1,0 +1,17 @@
+{
+  "llm": {
+    "provider": "deepseek",
+    "baseUrl": "https://api.deepseek.com",
+    "apiKey": "your-deepseek-api-key-here",
+    "model": "deepseek-chat",
+    "temperature": 1,
+    "maxTokens": 2000
+  },
+  "imageGen": {
+    "provider": "custom",
+    "baseUrl": "https://api.gemai.cc/v1",
+    "apiKey": "your-gemai-api-key-here",
+    "model": "gpt-image-2.5-low"
+  },
+  "savePath": ""
+}

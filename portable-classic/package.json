@@ -1,0 +1,17 @@
+{
+  "name": "xingse-studio",
+  "version": "1.0.0",
+  "description": "形色 XINGSE - 摄影导演与提示词生图工作台",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "prompt-generator",
+    "image-generation",
+    "photography",
+    "ai"
+  ],
+  "author": "XingSe Studio",
+  "license": "MIT"
+}
