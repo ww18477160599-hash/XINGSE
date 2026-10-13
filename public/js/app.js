@@ -1097,9 +1097,9 @@ async function handleAiDirectorMatch() {
 
     // 若配置了有效的 LLM API，调用大模型生成
     if (state.settings?.llm?.apiKey) {
-      const res = await ApiService.generateLlmPrompt(promptText);
-      if (res.content) {
-        const content = res.content;
+      const res = await ApiService.generateLlmPrompt(promptText, state.settings?.llm);
+      if (res && (res.content || res.prompt)) {
+        const content = res.content || res.prompt;
         if (content.includes('【作品企划标题】') && content.includes('【摄影提示词】')) {
           const parts = content.split('【摄影提示词】');
           generatedTitle = parts[0].replace('【作品企划标题】', '').replace(/^[《"'\s]+|[》"'\s]+$/g, '').trim().split('\n')[0].trim();
@@ -1177,9 +1177,9 @@ async function handleAiOptimizePrompt() {
   const promptText = `这是用户当前的摄影提示词方案：\n${currentText}\n\n当前锁定的硬性条件（必须严格保留，不得更改）：\n${lockedItems.join('\n') || '无明确锁定项'}\n\n请在严格保留该方案的主角身份设定、所有锁定条件与核心画面构架的前提下，对该提示词进行专业摄影细节与画面质感润色（增强物理真实感、微观材质纹理反光、受力重力平衡、景深透光与胶片色温层级，消除生硬词汇堆砌）。请只输出优化后的完整摄影提示词正文。`;
 
   try {
-    const res = await ApiService.generateLlmPrompt(promptText);
-    if (res.content) {
-      let polished = res.content;
+    const res = await ApiService.generateLlmPrompt(promptText, state.settings?.llm);
+    if (res && (res.content || res.prompt)) {
+      let polished = res.content || res.prompt;
       if (polished.includes('【摄影提示词】')) {
         polished = polished.split('【摄影提示词】')[1].replace(/^[：:\n\r]+/, '').trim();
       }
@@ -1244,7 +1244,7 @@ async function handleGenerateImage() {
     const size = XingSeDirector.getActualSubmitSize(ar);
 
     // 直接读取并提交框内当前文字
-    const res = await ApiService.generateImage(prompt, size, projectTitle);
+    const res = await ApiService.generateImage(prompt, size, projectTitle, state.settings?.imageGen);
 
     clearInterval(timerInterval);
     if (canvasImg) {
