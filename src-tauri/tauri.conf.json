@@ -4,9 +4,6 @@
   "version": "0.62.7",
   "identifier": "com.xingse.studio",
   "build": {
-    "beforeDevCommand": "",
-    "devUrl": "../public",
-    "beforeBuildCommand": "",
     "frontendDist": "../public"
   },
   "app": {
