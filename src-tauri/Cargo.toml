@@ -1,6 +1,6 @@
 [package]
 name = "xingse"
-version = "0.7.2"
+version = "0.7.3"
 description = "形色 XINGSE - 摄影导演与提示词生图工作台"
 authors = ["XingSe Studio"]
 edition = "2021"

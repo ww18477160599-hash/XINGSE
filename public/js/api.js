@@ -185,12 +185,12 @@ const ApiService = {
    严格根据服装形式（上下装 vs 一体装）协调各层衣片、面料织物纤维质感、剪裁褶皱与垂坠感，停用分区的字段绝对不混入画面。
 4. 物理承重与空间接触：
    模特姿态必须明确主辅支点（椅背、桌沿、地面等），身体与物体接触有真实物理受力形变，严禁悬空穿模。
-5. 七维近期去重：
-   若用户附带了近期方案特征，请确保本次方案在「人物身份、服装搭配、动作支撑、构图关系、机位焦段、光影调性、情绪张力」中至少有4个可变维度产生显著新颖变化，拒绝同脸模板与同质化套路。
+5. 七维近期去重与全新命名：
+   若用户附带了近期方案特征或当前片名，请确保本次方案在「人物骨相五官、服装搭配、动作支撑、构图关系、机位焦段、光影调性、情绪张力」中至少有4个可变维度产生显著新颖变化，且必须赋予一个全新的意境片名，拒绝同脸模板与同质化套路。
 
-请严格按以下格式输出，不要输出任何多余的客套前言寒暄：
+请严格按以下两段格式输出，不要输出任何多余的客套前言寒暄：
 【作品企划标题】
-(可选，拟定4-8字简洁利落的摄影片名，如《晨光与真丝》、《灰度空间》)
+(必填！拟定4-8字简洁利落、具有高级光影意境的摄影片名，如《晨光与真丝》、《微澜暮色》、《影落朱弦》，严禁省略，严禁复用旧片名)
 
 【摄影提示词】
 (300-500字独立完整的专业级摄影提示词，细节详实生动，语言流畅，可供生图模型直接出图)`;
@@ -490,10 +490,27 @@ const ApiService = {
 
   // 6. 历史记录
   async getHistory() {
+    // 1. 优先尝试使用 Tauri 原生读取 (直通本地磁盘，不受浏览器配额限制)
+    const invokeFn = window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke;
+    if (typeof invokeFn === 'function') {
+      try {
+        const raw = await invokeFn('get_history_records');
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list)) return list;
+        }
+      } catch (e) {
+        console.warn('Tauri get_history_records failed:', e);
+      }
+    }
+
+    // 2. 尝试从 Node 后端接口读取
     try {
       const res = await fetch('/api/history');
       if (res.ok) return await res.json();
     } catch (e) {}
+
+    // 3. 兜底从 localStorage 读取
     try {
       return JSON.parse(localStorage.getItem('xingse_history') || '[]');
     } catch (e) {
@@ -502,13 +519,20 @@ const ApiService = {
   },
 
   async saveHistory(record) {
-    try {
-      const list = JSON.parse(localStorage.getItem('xingse_history') || '[]');
-      list.unshift(record);
-      if (list.length > 50) list.length = 50;
-      localStorage.setItem('xingse_history', JSON.stringify(list));
-    } catch (e) {}
+    // 1. 优先尝试使用 Tauri 原生写入 (直写文件系统，容纳数百张作品完整提示词与图源)
+    const invokeFn = window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke;
+    if (typeof invokeFn === 'function') {
+      try {
+        const ok = await invokeFn('save_history_record', {
+          recordJson: JSON.stringify(record)
+        });
+        if (ok) return { success: true };
+      } catch (e) {
+        console.warn('Tauri save_history_record failed:', e);
+      }
+    }
 
+    // 2. 尝试保存至 Node 后端
     try {
       const res = await fetch('/api/history', {
         method: 'POST',
@@ -517,6 +541,20 @@ const ApiService = {
       });
       if (res.ok) return await res.json();
     } catch (e) {}
+
+    // 3. 兜底写入 localStorage：先脱敏大体积 Base64，彻底杜绝 QuotaExceededError 导致整个历史丢失
+    try {
+      const safeRec = { ...record };
+      if (safeRec.imageUrl && safeRec.imageUrl.startsWith('data:image/') && safeRec.imageUrl.length > 50000) {
+        safeRec.imageUrl = safeRec.savedPath || safeRec.savedFile || '';
+      }
+      const list = JSON.parse(localStorage.getItem('xingse_history') || '[]');
+      list.unshift(safeRec);
+      if (list.length > 50) list.length = 50;
+      localStorage.setItem('xingse_history', JSON.stringify(list));
+    } catch (e) {
+      console.warn('localStorage saveHistory failed:', e);
+    }
     return { success: true };
   },
 

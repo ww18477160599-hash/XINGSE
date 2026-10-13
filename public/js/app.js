@@ -1149,6 +1149,28 @@ async function handleTestImageGen() {
   }
 }
 
+// 智能诗意标题生成器（确保重新搭配时永不重名且契合画面调性）
+function generateCreativeTitle(selections, oldTitle) {
+  const hairs = (selections && selections['hair_color']) || '';
+  const fabric = (selections && (selections['integrated_fabric'] || selections['bottom_material'])) || '';
+  const mood = (selections && selections['emotion']) || '';
+
+  const prefixes = [hairs, fabric, mood, '微光', '暮色', '浮光', '暗香', '素影', '赤霞', '流金', '月影', '冷雾', '朱弦', '清澜', '回眸', '私语', '微澜', '薄暮'].filter(Boolean);
+  const suffixes = ['之诗', '肖像', '晨曦', '晚风', '私语', '留白', '独白', '微澜', '浮影', '幽光', '秘境', '凝眸', '序章', '沉醉', '薄雾', '流韵'].filter(Boolean);
+
+  let newTitle = '';
+  for (let i = 0; i < 30; i++) {
+    const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const s = suffixes[Math.floor(Math.random() * suffixes.length)];
+    const candidate = `${p}与${s}`;
+    if (candidate !== oldTitle && candidate.length <= 10) {
+      newTitle = candidate;
+      break;
+    }
+  }
+  return newTitle || `光影写真·${Date.now().toString().slice(-4)}`;
+}
+
 // 🎬 搭配：以当前生效的锁定池为硬性条件协调设计未锁定内容，生成完整提示词写入主提示词框
 async function handleAiDirectorMatch() {
   if (state.isGeneratingLlm) return;
@@ -1184,6 +1206,8 @@ async function handleAiDirectorMatch() {
     }
   });
 
+  const currentTitle = titleInput ? titleInput.value.trim() : '';
+
   // 2. 收集最近10次方案的摘要信息用于七维去重
   const recentSignatures = (state.history || []).slice(0, 10).map((h, idx) => {
     return `#${idx + 1} 《${h.title || '摄影方案'}》: ${(h.actualPrompt || '').slice(0, 80)}...`;
@@ -1194,6 +1218,10 @@ async function handleAiDirectorMatch() {
     promptText = `【用户指定的硬性核心要求（已锁定锚点，你必须100%严格保留贯彻并在画面中重点呈现）】：\n${lockedItems.join('\n')}\n\n`;
   } else {
     promptText = `用户当前未锁定任何具体维度，请你作为国际顶级时尚摄影导演，自由搭配一套极具美感张力、摄影光影极佳的成片方案。\n\n`;
+  }
+
+  if (currentTitle) {
+    promptText += `【重新搭配命名与视角指令】：\n当前画面的旧片名为《${currentTitle}》。本次点击「重新搭配」，请在保留所有锁定条件的前提下，设计不同的光影空间与视觉意境，并且必须重新拟定一个意境高雅、绝不重复的全新作品片名（严禁再次命名为《${currentTitle}》）！\n\n`;
   }
 
   if (recentSignatures.length > 0) {
@@ -1213,8 +1241,12 @@ async function handleAiDirectorMatch() {
         const content = res.content || res.prompt;
         if (content.includes('【作品企划标题】') && content.includes('【摄影提示词】')) {
           const parts = content.split('【摄影提示词】');
-          generatedTitle = parts[0].replace('【作品企划标题】', '').replace(/^[《"'\s]+|[》"'\s]+$/g, '').trim().split('\n')[0].trim();
+          generatedTitle = parts[0].replace('【作品企划标题】', '').replace(/^[《"'\s：:]+|[》"'\s：:]+$/g, '').trim().split('\n')[0].trim();
           generatedPrompt = parts[1].replace(/^[：:\n\r]+/, '').trim();
+        } else if (content.includes('【作品企划标题】')) {
+          const parts = content.split('【作品企划标题】');
+          generatedTitle = parts[1].trim().split('\n')[0].replace(/^[《"'\s：:]+|[》"'\s：:]+$/g, '').trim();
+          generatedPrompt = content.replace(/【作品企划标题】[\s\S]*?\n/, '').trim();
         } else if (content.includes('【摄影提示词】')) {
           generatedPrompt = content.split('【摄影提示词】')[1].replace(/^[：:\n\r]+/, '').trim();
         } else {
@@ -1225,7 +1257,11 @@ async function handleAiDirectorMatch() {
       // 离线/未配置 LLM 时的本地导演拼接备用逻辑
       const coordinated = XingSeDirector.directorCoordinateMatch(state.allFields, state.selections, state.locks, isFieldPartitionActive);
       generatedPrompt = XingSeDirector.assembleChinesePrompt(coordinated, state.fieldsMap);
-      generatedTitle = `${coordinated['theme'] || '时尚写真'}·${coordinated['tension'] || '光影肖像'}`;
+      generatedTitle = generateCreativeTitle(state.selections, currentTitle);
+    }
+
+    if (!generatedTitle || generatedTitle === currentTitle) {
+      generatedTitle = generateCreativeTitle(state.selections, currentTitle);
     }
 
     if (generatedTitle && titleInput) {
@@ -1395,11 +1431,14 @@ async function handleGenerateImage() {
     }
 
     // 保存到历史记录中（包含实际提交正文）
-    await ApiService.saveHistory({
+    const historyItem = {
+      id: 'hist_' + Date.now(),
+      timestamp: new Date().toISOString(),
       title: res.title || projectTitle,
       actualPrompt: prompt,
       promptZh: prompt,
       promptEn: '',
+      displayUrl: res.localUrl || res.imageUrl,
       imageUrl: res.imageUrl,
       savedSuccess: res.savedSuccess,
       savedFile: res.savedFile,
@@ -1408,9 +1447,15 @@ async function handleGenerateImage() {
       size: size,
       aspectRatio: ar,
       provider: res.provider || 'custom',
-      selections: state.selections,
-      locks: state.locks
-    });
+      selections: { ...state.selections },
+      locks: { ...state.locks }
+    };
+
+    // 内存同步立即生效，确保画廊与胶卷底片轴即时渲染且无延迟
+    state.history.unshift(historyItem);
+    if (state.history.length > 100) state.history.pop();
+
+    await ApiService.saveHistory(historyItem);
 
     // 胶卷底片轴同步新增
     const filmstripItem = {
@@ -1569,11 +1614,13 @@ function downloadImage(url, filename) {
 async function loadGallery() {
   try {
     const history = await ApiService.getHistory();
-    state.history = history;
+    if (Array.isArray(history) && history.length > 0) {
+      state.history = history;
+    }
 
     // 初始底片胶卷填充
-    if (history.length > 0 && state.filmstrip.length === 0) {
-      state.filmstrip = history.slice(0, 10).map(h => ({
+    if (state.history.length > 0 && state.filmstrip.length === 0) {
+      state.filmstrip = state.history.slice(0, 10).map(h => ({
         id: h.timestamp || Date.now() + Math.random(),
         displayUrl: h.displayUrl || h.localUrl || h.imageUrl || '',
         imageUrl: h.imageUrl || '',
@@ -1592,16 +1639,21 @@ async function loadGallery() {
     if (!grid) return;
     grid.innerHTML = '';
 
-    if (history.length === 0) {
+    if (state.history.length === 0) {
       grid.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;grid-column:1/-1;text-align:center;padding:30px 0;">暂无生图历史</div>';
       return;
     }
 
-    history.forEach(item => {
+    state.history.forEach(item => {
       const card = document.createElement('div');
       card.className = 'gallery-card';
       const itemTitle = item.title || '摄影作品';
-      const displayImg = item.displayUrl || item.localUrl || item.imageUrl || '';
+      let displayImg = item.displayUrl || item.imageUrl || '';
+      if (!displayImg && item.savedPath && window.__TAURI__?.core?.convertFileSrc) {
+        try {
+          displayImg = window.__TAURI__.core.convertFileSrc(item.savedPath);
+        } catch (e) {}
+      }
 
       card.innerHTML = `
         <img src="${displayImg}" alt="${itemTitle}" loading="lazy" />
@@ -1612,15 +1664,21 @@ async function loadGallery() {
       `;
 
       const gImg = card.querySelector('img');
-      if (gImg && item.imageUrl) {
+      if (gImg) {
         gImg.onerror = () => {
-          if (gImg.src !== item.imageUrl) gImg.src = item.imageUrl;
+          if (item.imageUrl && gImg.src !== item.imageUrl) {
+            gImg.src = item.imageUrl;
+          } else if (item.savedPath && window.__TAURI__?.core?.convertFileSrc) {
+            try {
+              gImg.src = window.__TAURI__.core.convertFileSrc(item.savedPath);
+            } catch (e) {}
+          }
         };
       }
 
       card.querySelector('img')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        openLightbox(displayImg, itemTitle, `${item.model || 'AI'} · ${item.savedFile || ''}`);
+        openLightbox(displayImg || item.imageUrl, itemTitle, `${item.model || 'AI'} · ${item.savedFile || ''}`);
       });
 
       // 点击“复原作品”：必须将当时实际提交的完整提示词恢复回主提示词框，并恢复选项与锁定
@@ -1678,6 +1736,10 @@ function switchWorkspaceTab(tab) {
   if (promptPanel) promptPanel.style.display = tab === 'prompt' ? 'flex' : 'none';
   if (canvasPanel) canvasPanel.style.display = tab === 'canvas' ? 'flex' : 'none';
   if (galleryPanel) galleryPanel.style.display = tab === 'gallery' ? 'flex' : 'none';
+
+  if (tab === 'gallery') {
+    loadGallery();
+  }
 }
 
 function openModal(id) {
