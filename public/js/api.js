@@ -3,15 +3,28 @@
  */
 
 const ApiService = {
+  // 环境检测: 判定是否处于原生 Tauri 桌面环境 (tauri.localhost / tauri: 协议)
+  isTauri() {
+    return typeof window !== 'undefined' && (
+      !!window.__TAURI__ ||
+      window.location.protocol === 'tauri:' ||
+      window.location.hostname === 'tauri.localhost' ||
+      window.location.origin.includes('tauri.localhost')
+    );
+  },
+
   // 1. 获取完整选项 (支持服务端 + 内置离线数据库双重保全)
   async fetchOptions() {
-    try {
-      const res = await fetch('/api/options');
-      if (res.ok) {
-        return await res.json();
+    if (!this.isTauri()) {
+      try {
+        const res = await fetch('/api/options');
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) {
+          return await res.json();
+        }
+      } catch (e) {
+        console.warn('Network /api/options unavailable, using built-in offline options:', e);
       }
-    } catch (e) {
-      console.warn('Network /api/options unavailable, using built-in offline options:', e);
     }
 
     // 内置离线完整选项库
@@ -40,17 +53,20 @@ const ApiService = {
     const cleanOpt = (optionName || '').trim();
     if (!cleanOpt) throw new Error('选项名称不能为空');
 
-    try {
-      const res = await fetch('/api/custom-options', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fieldId, optionName: cleanOpt })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.customOptions) return data;
-      }
-    } catch (e) {}
+    if (!this.isTauri()) {
+      try {
+        const res = await fetch('/api/custom-options', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fieldId, optionName: cleanOpt })
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) {
+          const data = await res.json();
+          if (data && data.customOptions) return data;
+        }
+      } catch (e) {}
+    }
 
     // 本地持久化储存
     try {
@@ -70,17 +86,20 @@ const ApiService = {
 
   async deleteCustomOption(fieldId, optionName) {
     const cleanOpt = (optionName || '').trim();
-    try {
-      const res = await fetch('/api/custom-options', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fieldId, optionName: cleanOpt })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.customOptions) return data;
-      }
-    } catch (e) {}
+    if (!this.isTauri()) {
+      try {
+        const res = await fetch('/api/custom-options', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fieldId, optionName: cleanOpt })
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) {
+          const data = await res.json();
+          if (data && data.customOptions) return data;
+        }
+      } catch (e) {}
+    }
 
     try {
       const localCustom = JSON.parse(localStorage.getItem('xingse_custom_options') || '{}');
@@ -96,10 +115,16 @@ const ApiService = {
 
   // 3. API 配置读取与保存
   async getSettings() {
-    try {
-      const res = await fetch('/api/settings');
-      if (res.ok) return await res.json();
-    } catch (e) {}
+    if (!this.isTauri()) {
+      try {
+        const res = await fetch('/api/settings');
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) {
+          const data = await res.json();
+          if (data && (data.llm || data.imageGen)) return data;
+        }
+      } catch (e) {}
+    }
 
     try {
       return JSON.parse(localStorage.getItem('xingse_settings') || '{}');
@@ -113,14 +138,17 @@ const ApiService = {
       localStorage.setItem('xingse_settings', JSON.stringify(settings));
     } catch (e) {}
 
-    try {
-      const res = await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
+    if (!this.isTauri()) {
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings)
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) return await res.json();
+      } catch (e) {}
+    }
 
     return { success: true };
   },
@@ -129,22 +157,26 @@ const ApiService = {
   async testLlm(config) {
     const settings = await ApiService.getSettings();
     const cfg = config || settings?.llm || (typeof state !== 'undefined' ? state.settings?.llm : null) || {};
-    try {
-      const res = await fetch('/api/llm/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cfg)
-      });
-      if (res.ok) return await res.json();
-      let errMsg = `LLM 测试接口失败 (${res.status})`;
+    if (!ApiService.isTauri()) {
       try {
-        const errJson = await res.json();
-        if (errJson && errJson.error) errMsg = errJson.error;
-      } catch (_) {}
-      throw new Error(errMsg);
-    } catch (e) {
-      if (e.message && !e.message.includes('Failed to fetch') && !e.message.includes('NetworkError')) {
-        throw e;
+        const res = await fetch('/api/llm/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) return await res.json();
+        let errMsg = `LLM 测试接口失败 (${res.status})`;
+        try {
+          const errJson = await res.json();
+          if (errJson && errJson.error) errMsg = errJson.error;
+        } catch (_) {}
+        throw new Error(errMsg);
+      } catch (e) {
+        const msg = e.message || '';
+        if (!msg.includes('Failed to fetch') && !msg.includes('NetworkError') && !msg.includes('Unexpected token') && !msg.includes('is not valid JSON')) {
+          throw e;
+        }
       }
     }
 
@@ -177,22 +209,27 @@ const ApiService = {
     const cfg = config || settings?.llm || (typeof state !== 'undefined' ? state.settings?.llm : null) || {};
     const tm = targetModel || (typeof state !== 'undefined' ? state.settings?.imageGen?.model : '') || settings?.imageGen?.model || '';
     const tp = targetProvider || (typeof state !== 'undefined' ? state.settings?.imageGen?.provider : '') || settings?.imageGen?.provider || '';
-    try {
-      const res = await fetch('/api/llm/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, config: cfg, lang, targetModel: tm, targetProvider: tp })
-      });
-      if (res.ok) return await res.json();
-      let errMsg = `LLM 生成提示词失败 (${res.status})`;
+    
+    if (!ApiService.isTauri()) {
       try {
-        const errJson = await res.json();
-        if (errJson && errJson.error) errMsg = errJson.error;
-      } catch (_) {}
-      throw new Error(errMsg);
-    } catch (e) {
-      if (e.message && !e.message.includes('Failed to fetch') && !e.message.includes('NetworkError')) {
-        throw e;
+        const res = await fetch('/api/llm/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, config: cfg, lang, targetModel: tm, targetProvider: tp })
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) return await res.json();
+        let errMsg = `LLM 生成提示词失败 (${res.status})`;
+        try {
+          const errJson = await res.json();
+          if (errJson && errJson.error) errMsg = errJson.error;
+        } catch (_) {}
+        throw new Error(errMsg);
+      } catch (e) {
+        const msg = e.message || '';
+        if (!msg.includes('Failed to fetch') && !msg.includes('NetworkError') && !msg.includes('Unexpected token') && !msg.includes('is not valid JSON')) {
+          throw e;
+        }
       }
     }
 
@@ -286,22 +323,26 @@ If previous titles or styles are mentioned, introduce creative divergence in lig
   async testImageGen(config) {
     const settings = await ApiService.getSettings();
     const cfg = config || settings?.imageGen || (typeof state !== 'undefined' ? state.settings?.imageGen : null) || {};
-    try {
-      const res = await fetch('/api/image/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cfg)
-      });
-      if (res.ok) return await res.json();
-      let errMsg = `生图测试接口失败 (${res.status})`;
+    if (!ApiService.isTauri()) {
       try {
-        const errJson = await res.json();
-        if (errJson && errJson.error) errMsg = errJson.error;
-      } catch (_) {}
-      throw new Error(errMsg);
-    } catch (e) {
-      if (e.message && !e.message.includes('Failed to fetch') && !e.message.includes('NetworkError')) {
-        throw e;
+        const res = await fetch('/api/image/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) return await res.json();
+        let errMsg = `生图测试接口失败 (${res.status})`;
+        try {
+          const errJson = await res.json();
+          if (errJson && errJson.error) errMsg = errJson.error;
+        } catch (_) {}
+        throw new Error(errMsg);
+      } catch (e) {
+        const msg = e.message || '';
+        if (!msg.includes('Failed to fetch') && !msg.includes('NetworkError') && !msg.includes('Unexpected token') && !msg.includes('is not valid JSON')) {
+          throw e;
+        }
       }
     }
 
@@ -339,28 +380,32 @@ If previous titles or styles are mentioned, introduce creative divergence in lig
   async generateImage(prompt, size, title, config) {
     const settings = await ApiService.getSettings();
     const cfg = config || settings?.imageGen || (typeof state !== 'undefined' ? state.settings?.imageGen : null) || {};
-    try {
-      const res = await fetch('/api/image/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, size, title, config: cfg })
-      });
-      if (res.ok) return await res.json();
-      let errMsg = `服务端生图异常 (${res.status})`;
+    if (!ApiService.isTauri()) {
       try {
-        const errJson = await res.json();
-        if (errJson && errJson.error) errMsg = errJson.error;
-      } catch (_) {
-        const errText = await res.text();
-        if (errText) errMsg = `${errMsg}: ${errText}`;
+        const res = await fetch('/api/image/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, size, title, config: cfg })
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) return await res.json();
+        let errMsg = `服务端生图异常 (${res.status})`;
+        try {
+          const errJson = await res.json();
+          if (errJson && errJson.error) errMsg = errJson.error;
+        } catch (_) {
+          const errText = await res.text();
+          if (errText) errMsg = `${errMsg}: ${errText}`;
+        }
+        throw new Error(errMsg);
+      } catch (e) {
+        // 若服务端返回了业务错误或明确抛错，直接向外抛出，绝不静默重试防二次扣费
+        const msg = e.message || '';
+        if (!msg.includes('Failed to fetch') && !msg.includes('NetworkError') && !msg.includes('Unexpected token') && !msg.includes('is not valid JSON')) {
+          throw e;
+        }
+        console.warn('后端服务不可达，尝试前端直连兜底:', e.message);
       }
-      throw new Error(errMsg);
-    } catch (e) {
-      // 若服务端返回了业务错误或明确抛错，直接向外抛出，绝不静默重试防二次扣费
-      if (e.message && !e.message.includes('Failed to fetch') && !e.message.includes('NetworkError')) {
-        throw e;
-      }
-      console.warn('后端服务不可达，尝试前端直连兜底:', e.message);
     }
 
     const baseUrl = (cfg.baseUrl || 'https://api.gemai.cc/v1').replace(/\/+$/, '');
@@ -788,10 +833,13 @@ If previous titles or styles are mentioned, introduce creative divergence in lig
 
   // 7. 预设
   async getPresets() {
-    try {
-      const res = await fetch('/api/presets');
-      if (res.ok) return await res.json();
-    } catch (e) {}
+    if (!this.isTauri()) {
+      try {
+        const res = await fetch('/api/presets');
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) return await res.json();
+      } catch (e) {}
+    }
     if (window.DEFAULT_PRESETS_DATA) {
       return JSON.parse(JSON.stringify(window.DEFAULT_PRESETS_DATA));
     }
@@ -799,26 +847,32 @@ If previous titles or styles are mentioned, introduce creative divergence in lig
   },
 
   async savePreset(name, selections, locks) {
-    try {
-      const res = await fetch('/api/presets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, selections, locks })
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
+    if (!this.isTauri()) {
+      try {
+        const res = await fetch('/api/presets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, selections, locks })
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) return await res.json();
+      } catch (e) {}
+    }
     return { success: true };
   },
 
   async deletePreset(id) {
-    try {
-      const res = await fetch('/api/presets', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {}
+    if (!this.isTauri()) {
+      try {
+        const res = await fetch('/api/presets', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) return await res.json();
+      } catch (e) {}
+    }
     return { success: true };
   }
 };
