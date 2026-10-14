@@ -136,13 +136,23 @@ const ApiService = {
         body: JSON.stringify(cfg)
       });
       if (res.ok) return await res.json();
-    } catch (e) {}
+      let errMsg = `LLM 测试接口失败 (${res.status})`;
+      try {
+        const errJson = await res.json();
+        if (errJson && errJson.error) errMsg = errJson.error;
+      } catch (_) {}
+      throw new Error(errMsg);
+    } catch (e) {
+      if (e.message && !e.message.includes('Failed to fetch') && !e.message.includes('NetworkError')) {
+        throw e;
+      }
+    }
 
     // 本地直连测试
     const baseUrl = (cfg.baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
     const apiKey = cfg.apiKey || '';
     const model = cfg.model || 'deepseek-chat';
-    if (!apiKey) throw new Error('未配置 LLM API Key，请先点击右上角设置');
+    if (!apiKey || apiKey.includes('•') || apiKey.includes('\u2022')) throw new Error('未配置有效 LLM API Key (当前凭证脱敏中)，请在右上角设置中填写或启动后台服务');
     const r = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -162,17 +172,29 @@ const ApiService = {
     return { success: true };
   },
 
-  async generateLlmPrompt(prompt, config) {
+  async generateLlmPrompt(prompt, config, lang = 'zh', targetModel = '', targetProvider = '') {
     const settings = await ApiService.getSettings();
     const cfg = config || settings?.llm || (typeof state !== 'undefined' ? state.settings?.llm : null) || {};
+    const tm = targetModel || (typeof state !== 'undefined' ? state.settings?.imageGen?.model : '') || settings?.imageGen?.model || '';
+    const tp = targetProvider || (typeof state !== 'undefined' ? state.settings?.imageGen?.provider : '') || settings?.imageGen?.provider || '';
     try {
       const res = await fetch('/api/llm/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, config: cfg })
+        body: JSON.stringify({ prompt, config: cfg, lang, targetModel: tm, targetProvider: tp })
       });
       if (res.ok) return await res.json();
-    } catch (e) {}
+      let errMsg = `LLM 生成提示词失败 (${res.status})`;
+      try {
+        const errJson = await res.json();
+        if (errJson && errJson.error) errMsg = errJson.error;
+      } catch (_) {}
+      throw new Error(errMsg);
+    } catch (e) {
+      if (e.message && !e.message.includes('Failed to fetch') && !e.message.includes('NetworkError')) {
+        throw e;
+      }
+    }
 
     // 本地直连调用
     const baseUrl = (cfg.baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
@@ -180,9 +202,37 @@ const ApiService = {
     const model = cfg.model || 'deepseek-chat';
     const temp = typeof cfg.temperature === 'number' ? cfg.temperature : 1;
     const maxTokens = cfg.maxTokens || 2000;
-    if (!apiKey) throw new Error('未配置 LLM API Key，请在右上角「API 接口设置」中填写');
+    if (!apiKey || apiKey.includes('•') || apiKey.includes('\u2022')) throw new Error('未配置有效 LLM API Key (当前凭证脱敏中)，请在右上角「API 接口设置」中填写');
 
-    const systemPrompt = `你是一位享誉国际的专业时尚与女性写真摄影导演，拥有敏锐的光影审美、空间构图感知力与镜头语言表现力。
+    const isEnglish = (lang === 'en');
+    const systemPrompt = isEnglish
+      ? `You are a world-renowned master fashion and fine-art portrait photography director, celebrated for extraordinary command of natural lighting optics, textural realism, tactile spatial depth, and evocative character emotion.
+Your mission is to formulate an independent, cohesive, and deeply detailed professional English photography prompt for adult female portraits, optimized directly for modern high-end image diffusion models (such as FLUX, Midjourney v6, SDXL, and Qwen-Image-3.0).
+
+[CORE PHOTOGRAPHIC DIRECTIVES]:
+1. Mandatory Adherence to User Locked Anchors:
+All user-specified locked attributes (formatted as [Group · Field = Value]) are absolute golden constraints. You must 100% strictly incorporate, preserve, and emphasize them in the scene. Never ignore, modify, or omit any locked item.
+2. Harmonic Composition & Negative Space:
+For all unlocked dimensions, freely curate and harmonize facial bone structure, weight distribution, authentic points of physical contact, spatial depth, atmospheric lighting temperature, and prime lens optics.
+3. Strict Wardrobe Architecture & Fabric Physics:
+Faithfully depict garment construction (e.g. separate upper/lower or one-piece), textile weaves (fine-gauge silk, raw linen, ribbed cotton, matte satin, sheer lace), natural gravitational drape, and seam tension.
+4. Physical Realism & Anatomical Grounding:
+The subject's pose must have credible physical weight and balance against contact surfaces (chair back, table edge, armrest, floor).
+5. Absolute Optical Skin Realism (Banish All Plastic/CG/Wax Doll Artifacts):
+Direct the visual rendering to achieve the authentic optical fidelity of flagship medium-format cameras (e.g., Hasselblad H6D-100c or Sony A7R V with 85mm f/1.4 prime lens at wide aperture):
+- Micro-pore epidermal texture, soft translucent subsurface scattering (SSS) along earlobes, jawline, and collarbones.
+- Delicate peach fuzz (vellus hair) glowing softly in backlight/rim light, natural sebaceous sheen without oily plastic sheen, authentic subtle capillaries and natural micro-freckles.
+- True-to-life shadows and skin fold contours with natural skin warmth and photographic dynamic range.
+6. Unique Naming & Creative Divergence:
+If previous titles or styles are mentioned, introduce creative divergence in lighting, mood, and pose, and craft a distinct English title.
+
+[REQUIRED OUTPUT FORMAT] (Strictly output these two sections with exact headers, no conversational filler):
+【作品企划标题】
+(A poetic 3 to 7 word photography collection title in English, e.g., "Morning Light on Raw Silk", "Solitude in Amber Hour", "Gilded Shadows", "Symphony of Dusk")
+
+【摄影提示词】
+(A cohesive, richly detailed 200-350 word professional English photography prompt composed in native cinematographic and photographic terminology, ready for direct image generation)`
+      : `你是一位享誉国际的专业时尚与女性写真摄影导演，拥有敏锐的光影审美、空间构图感知力与镜头语言表现力。
 你的任务是根据用户提供的摄影需求和条件，设计独立完整的中文成年女性专业摄影提示词。
 
 【形色摄影导演核心工作铁律】：
@@ -243,30 +293,47 @@ const ApiService = {
         body: JSON.stringify(cfg)
       });
       if (res.ok) return await res.json();
-    } catch (e) {}
+      let errMsg = `生图测试接口失败 (${res.status})`;
+      try {
+        const errJson = await res.json();
+        if (errJson && errJson.error) errMsg = errJson.error;
+      } catch (_) {}
+      throw new Error(errMsg);
+    } catch (e) {
+      if (e.message && !e.message.includes('Failed to fetch') && !e.message.includes('NetworkError')) {
+        throw e;
+      }
+    }
 
+    // 本地直连检测兜底
     const baseUrl = (cfg.baseUrl || 'https://api.gemai.cc/v1').replace(/\/+$/, '');
     const apiKey = cfg.apiKey || '';
     const model = cfg.model || 'gpt-image-2.5-low';
-    if (!apiKey) throw new Error('未配置生图 API Key，请先点击右上角设置');
-    const r = await fetch(`${baseUrl}/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: model,
-        prompt: 'test',
-        size: '1024x1024',
-        n: 1
-      })
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      throw new Error(`生图接口测试失败 (${r.status}): ${t}`);
+    const provider = cfg.provider || (baseUrl.includes('dashscope') || (model && model.startsWith('wanx')) ? 'dashscope' : (baseUrl.includes('siliconflow') ? 'siliconflow' : 'custom'));
+    if (!apiKey || apiKey.includes('•') || apiKey.includes('\u2022')) throw new Error('未配置有效生图 API Key (当前凭证脱敏中)，请先在右上角设置中填写或启动后台服务');
+
+    if (provider === 'dashscope' || baseUrl.includes('dashscope')) {
+      const testUrl = 'https://dashscope.aliyuncs.com/api/v1/tasks?page_no=1&page_size=1';
+      const r = await fetch(testUrl, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (!r.ok) {
+        const t = await r.text();
+        throw new Error(`百炼 API Key 验证失败 (${r.status}): ${t}`);
+      }
+      return { success: true, zeroCost: true, message: '阿里云百炼 (DashScope) 连接测试成功！' };
     }
-    return { success: true };
+
+    const r = await fetch(`${baseUrl}/models`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    });
+    if (!r.ok && r.status !== 404 && r.status !== 405) {
+      const t = await r.text();
+      throw new Error(`生图接口握手失败 (${r.status}): ${t}`);
+    }
+    return { success: true, zeroCost: true, message: '生图接口连接握手成功！' };
   },
 
   async generateImage(prompt, size, title, config) {
@@ -279,31 +346,128 @@ const ApiService = {
         body: JSON.stringify({ prompt, size, title, config: cfg })
       });
       if (res.ok) return await res.json();
-    } catch (e) {}
+      let errMsg = `服务端生图异常 (${res.status})`;
+      try {
+        const errJson = await res.json();
+        if (errJson && errJson.error) errMsg = errJson.error;
+      } catch (_) {
+        const errText = await res.text();
+        if (errText) errMsg = `${errMsg}: ${errText}`;
+      }
+      throw new Error(errMsg);
+    } catch (e) {
+      // 若服务端返回了业务错误或明确抛错，直接向外抛出，绝不静默重试防二次扣费
+      if (e.message && !e.message.includes('Failed to fetch') && !e.message.includes('NetworkError')) {
+        throw e;
+      }
+      console.warn('后端服务不可达，尝试前端直连兜底:', e.message);
+    }
 
     const baseUrl = (cfg.baseUrl || 'https://api.gemai.cc/v1').replace(/\/+$/, '');
     const apiKey = cfg.apiKey || '';
     const model = cfg.model || 'gpt-image-2.5-low';
-    if (!apiKey) throw new Error('未配置生图 API Key，请在右上角「API 接口设置」中填写');
-    const r = await fetch(`${baseUrl}/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: model,
-        prompt: prompt,
-        size: size || '1440x900',
-        n: 1
-      })
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      throw new Error(`生图接口调用失败 (${r.status}): ${t}`);
+    const provider = cfg.provider || (baseUrl.includes('dashscope') || (model && model.startsWith('wanx')) ? 'dashscope' : (baseUrl.includes('siliconflow') ? 'siliconflow' : 'custom'));
+    if (!apiKey || apiKey.includes('•') || apiKey.includes('\u2022')) throw new Error('未配置有效生图 API Key (当前凭证脱敏中)，请在右上角「API 接口设置」中填写');
+
+    let url = '';
+
+    // DashScope 百炼千问与万相生图分流
+    if (provider === 'dashscope' || baseUrl.includes('dashscope') || (model && (model.startsWith('wanx') || model.includes('qwen-image')))) {
+      if (model && model.toLowerCase().includes('qwen-image')) {
+        // Qwen-Image 官方标准走百炼多模态生成通道
+        const cleanSize = (size || '1024x1024').toLowerCase().replace('x', '*');
+        const r = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: model || 'qwen-image-3.0',
+            input: {
+              messages: [
+                {
+                  role: 'user',
+                  content: [{ text: prompt }]
+                }
+              ]
+            },
+            parameters: {
+              size: cleanSize,
+              n: 1
+            }
+          })
+        });
+        if (!r.ok) {
+          const t = await r.text();
+          throw new Error(`百炼千问生图调用失败 (${r.status}): ${t}`);
+        }
+        const data = await r.json();
+        url = data.output?.choices?.[0]?.message?.content?.[0]?.image || data.data?.[0]?.url || '';
+      } else {
+        // 通义万相原生异步任务模式
+        const cleanSize = (size || '1024x1024').toLowerCase().replace('x', '*');
+        const submitRes = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'X-DashScope-Async': 'enable'
+          },
+          body: JSON.stringify({
+            model: model || 'wanx2.1-t2i-turbo',
+            input: { prompt },
+            parameters: { size: cleanSize, n: 1 }
+          })
+        });
+        if (!submitRes.ok) {
+          const t = await submitRes.text();
+          throw new Error(`百炼万相生图提交失败 (${submitRes.status}): ${t}`);
+        }
+        const sData = await submitRes.json();
+        const taskId = sData.output?.task_id;
+        if (!taskId) throw new Error('百炼未返回任务 ID');
+
+        const maxWait = 120000;
+        const start = Date.now();
+        while (Date.now() - start < maxWait) {
+          await new Promise(res => setTimeout(res, 1500));
+          const pollRes = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`, {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+          });
+          if (pollRes.ok) {
+            const pData = await pollRes.json();
+            if (pData.output?.task_status === 'SUCCEEDED') {
+              url = pData.output?.results?.[0]?.url;
+              break;
+            } else if (pData.output?.task_status === 'FAILED') {
+              throw new Error(`百炼万相生图任务失败: ${pData.output?.message || '未知错误'}`);
+            }
+          }
+        }
+        if (!url) throw new Error('百炼万相生图超时或未获取到图片');
+      }
+    } else {
+      const r = await fetch(`${baseUrl}/images/generations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          prompt: prompt,
+          size: size || '1024x1024',
+          n: 1
+        })
+      });
+      if (!r.ok) {
+        const t = await r.text();
+        throw new Error(`生图接口调用失败 (${r.status}): ${t}`);
+      }
+      const data = await r.json();
+      url = data.data?.[0]?.url || (data.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : '');
     }
-    const data = await r.json();
-    const url = data.data?.[0]?.url || (data.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : '');
     if (!url) throw new Error('未获取到生成的图片地址');
     let localPath = url;
     let savedSuccess = false;
@@ -567,6 +731,58 @@ const ApiService = {
     } catch (e) {
       console.warn('localStorage saveHistory failed:', e);
     }
+    return { success: true };
+  },
+
+  async deleteHistory(id) {
+    if (!id) return { success: false };
+
+    // 1. 优先尝试使用 Tauri 原生删除
+    const invokeFn = window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke;
+    if (typeof invokeFn === 'function') {
+      try {
+        await invokeFn('delete_history_record', { id });
+      } catch (e) {
+        console.warn('Tauri delete_history_record failed:', e);
+      }
+    }
+
+    // 2. 尝试从 Node 后端接口删除
+    try {
+      await fetch(`/api/history?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+    } catch (e) {}
+
+    // 3. 兜底更新 localStorage
+    try {
+      const list = JSON.parse(localStorage.getItem('xingse_history') || '[]');
+      const filtered = list.filter(item => item.id !== id);
+      localStorage.setItem('xingse_history', JSON.stringify(filtered));
+    } catch (e) {}
+
+    return { success: true };
+  },
+
+  async clearHistory() {
+    // 1. Tauri
+    const invokeFn = window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke;
+    if (typeof invokeFn === 'function') {
+      try {
+        await invokeFn('clear_history_records');
+      } catch (e) {}
+    }
+
+    // 2. Node
+    try {
+      await fetch('/api/history?all=true', { method: 'DELETE' });
+    } catch (e) {}
+
+    // 3. localStorage
+    try {
+      localStorage.setItem('xingse_history', '[]');
+    } catch (e) {}
+
     return { success: true };
   },
 

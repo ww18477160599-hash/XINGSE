@@ -1,6 +1,2095 @@
-/**
- * 形色 XINGSE 内置离线默认数据库 (零网络依赖 · 4字极简高真实感典藏版)
- */
-window.DEFAULT_OPTIONS_DATA = {"version":"0.62.7","groups":[{"id":"overview","name":"创作","fields":[{"id":"theme","name":"主题","groupId":"overview","groupName":"创作","type":"single","note":"","activeWhen":null,"options":["生活写真","时尚编辑","街头穿搭","度假旅拍","泳装写真","内衣广告","运动写真","棚拍肖像","电影叙事","舞台造型","前卫先锋","个人壁纸"],"customOptions":[]},{"id":"tension","name":"张力","groupId":"overview","groupName":"创作","type":"single","note":"描述审美强度，不能自动推导为更少衣物或性行为。","activeWhen":null,"options":["清新自然","温柔亲近","成熟优雅","俏皮明艳","慵懒妩媚","冷艳疏离","热烈自信","含蓄暧昧","强烈吸引","强烈张力"],"customOptions":[]},{"id":"aspect_ratio","name":"画幅","groupId":"overview","groupName":"创作","type":"single","note":"","activeWhen":null,"options":["9:16","3:4","2:3","4:5","1:1","4:3","3:2","16:9","16:9"],"customOptions":[]},{"id":"framing","name":"范围","groupId":"overview","groupName":"创作","type":"single","note":"","activeWhen":null,"options":["全身","七分身","半身","肩部肖像","面部特写","环境人像","局部裁切","背身无脸"],"customOptions":[]}]},{"id":"identity","name":"人物","fields":[{"id":"age","name":"年龄","groupId":"identity","groupName":"人物","type":"single","note":"每档两个整岁；自定义必须明确成年，不能采用含未成年人的区间。","activeWhen":null,"minimum":18,"options":["18岁","20岁","22岁","24岁","26岁","28岁","30岁","32岁","35岁","38岁","40岁","45岁","50岁"],"customOptions":[]},{"id":"ancestry","name":"人群","groupId":"identity","groupName":"人物","type":"single","note":"作为视觉创作方向；不把国籍、人种与固定脸型或肤色等同，不套民族服装。混合须具体设计骨相。","activeWhen":null,"options":["东亚","东南亚","南亚","中亚","西亚","北欧","东欧","西欧","南欧","北非","西非","东非","中非","南部非洲","加勒比","拉美","大洋洲","混血骨相"],"customOptions":[]},{"id":"face_shape","name":"脸型","groupId":"identity","groupName":"人物","type":"single","note":"","activeWhen":null,"options":["鹅蛋脸","圆脸","长脸","方脸","圆方脸","心形脸","菱形脸","梨形脸","窄长脸","宽短脸","折叠方脸"],"customOptions":[]},{"id":"bone_structure","name":"骨相","groupId":"identity","groupName":"人物","type":"single","note":"","activeWhen":null,"options":["宽颧柔颌","高颧窄颌","低颧饱满","清晰方颌","柔和圆颌","宽额窄颌","窄额宽颌","深眼窝","浅眼窝","长中庭","短中庭","微不对称"],"customOptions":[]},{"id":"eyes","name":"眼形","groupId":"identity","groupName":"人物","type":"single","note":"","activeWhen":null,"options":["杏眼","圆眼","细长眼","上扬眼","下垂眼","深眼窝眼","宽眼距","近眼距","内双","单眼皮","折扇双眼"],"customOptions":[]},{"id":"nose","name":"鼻形","groupId":"identity","groupName":"人物","type":"single","note":"","activeWhen":null,"options":["水滴柔鼻","直鼻梁","高鼻根","驼峰微弧","宽鼻翼","窄鼻翼","圆鼻尖","上翘鼻尖","长鼻","短鼻"],"customOptions":[]},{"id":"lips","name":"唇形","groupId":"identity","groupName":"人物","type":"single","note":"","activeWhen":null,"options":["薄唇","饱满唇","上薄下厚","上厚下薄","清晰唇峰","柔和唇峰","宽嘴角","小唇形","微不对称"],"customOptions":[]},{"id":"brows","name":"眉形","groupId":"identity","groupName":"人物","type":"single","note":"","activeWhen":null,"options":["平直眉","弧形眉","上扬眉","自然粗眉","细长眉","短眉","浅淡眉","浓密眉"],"customOptions":[]},{"id":"skin_tone","name":"肤色","groupId":"identity","groupName":"人物","type":"single","note":"地域与肤色互不自动绑定。","activeWhen":null,"options":["冷白","中性白","暖白","浅米","暖米","橄榄","蜜色","古铜","棕色","深棕","深色"],"customOptions":[]},{"id":"skin_character","name":"皮肤","groupId":"identity","groupName":"人物","type":"single","note":"始终保留皮肤光学与部位差异，不用整脸均匀毛孔覆盖。","activeWhen":null,"options":["真实肌理","原生微绒","透光细孔","健康微汗","自然微红","原生泪痣","局部雀斑","通透微光","胶原光泽","薄皮透光","哑光绒面","细致冷光","光润清透"],"customOptions":[]}]},{"id":"body","name":"身材","fields":[{"id":"height","name":"身高","groupId":"body","groupName":"身材","type":"single","note":"自定义以cm输入。","activeWhen":null,"options":["150高","155高","160高","165高","170高","175高","180高","185高"],"customOptions":[]},{"id":"figure","name":"体型","groupId":"body","groupName":"身材","type":"single","note":"整体轮廓独立于局部尺寸。L6允许现实难以存在的比例，但保持真人实拍质感、连续结构、真实重力；不得自动设为默认。","activeWhen":null,"options":["纤细苗条","匀称紧实","运动活力","丰腴饱满","曼妙沙漏","极致沙漏"],"customOptions":[]},{"id":"bust_size","name":"胸围","groupId":"body","groupName":"身材","type":"single","note":"这是视觉尺寸级别，不能当作罩杯或胸围厘米值。精确胸围使用自定义cm并补下胸围。","activeWhen":null,"options":["纤小","偏小","中等","饱满","丰满","很丰满","夸张","超现实"],"customOptions":[]},{"id":"cup","name":"罩杯","groupId":"body","groupName":"身材","type":"single","note":"罩杯随下胸围和尺码体系变化，不能单独对应体积；自定义需指定体系，厘米三围与罩杯冲突时先协调。","activeWhen":null,"options":["A","B","C","D","E","F","G","H","I","J","K","L杯以上"],"customOptions":[]},{"id":"underbust","name":"下胸围","groupId":"body","groupName":"身材","type":"single","note":"辅助尺寸；未给出时按体型设计，不伪称精确测量。","activeWhen":null,"options":["60下","65下","70下","75下","80下","85下","90下","95下"],"customOptions":[]},{"id":"bust_shape","name":"胸型","groupId":"body","groupName":"身材","type":"single","note":"是自然轮廓；穿衣后的轮廓须再考虑内衬、支撑、重力与姿态。","activeWhen":null,"options":["自然水滴","圆润饱满","宽底柔和","窄底集中","上部饱满","下部饱满","自然外展","自然下垂","微不对称"],"customOptions":[]},{"id":"waist","name":"腰部","groupId":"body","groupName":"身材","type":"single","note":"","activeWhen":null,"options":["自然腰线","偏直腰","柔和收腰","细腰","明显收腰","极细腰","极致细腰"],"customOptions":[]},{"id":"hips_size","name":"臀围","groupId":"body","groupName":"身材","type":"single","note":"视觉尺度；精确臀围以cm自定义，与体型及腰臀比例协调。","activeWhen":null,"options":["窄","偏窄","中等","饱满","宽","很宽","夸张","超现实"],"customOptions":[]},{"id":"hips_shape","name":"臀型","groupId":"body","groupName":"身材","type":"single","note":"","activeWhen":null,"options":["圆臀","桃臀","心形","倒心形","梨形","方臀","宽扁臀","自然下垂","上翘","运动紧实","柔软饱满","微不对称"],"customOptions":[]},{"id":"waist_hip_ratio","name":"腰臀比","groupId":"body","groupName":"身材","type":"single","note":"默认用视觉关系；数值自定义按腰围÷臀围计算，不冒充从图片量得的精确值。","activeWhen":null,"options":["自然平缓","柔和反差","明显反差","强烈反差","极致反差"],"customOptions":[]},{"id":"shoulders","name":"肩线","groupId":"body","groupName":"身材","type":"single","note":"","activeWhen":null,"options":["窄肩","中等肩","宽肩","平肩","微溜肩","运动肩"],"customOptions":[]},{"id":"legs","name":"腿部","groupId":"body","groupName":"身材","type":"single","note":"","activeWhen":null,"options":["纤细","匀称","肌肉清晰","柔软丰满","修长","娇小比例","自然曲线"],"customOptions":[]}]},{"id":"styling","name":"发妆","fields":[{"id":"hair","name":"发型","groupId":"styling","groupName":"发妆","type":"single","note":"","activeWhen":null,"options":["利落短发","精灵短发","短鲍勃","齐肩直发","齐肩波浪","中长直发","中长卷发","长直发","长波浪","自然卷","高马尾","低马尾","高丸子","低盘发","双辫","单辫","半扎发","湿发后梳"],"customOptions":[]},{"id":"hair_part","name":"分缝","groupId":"styling","groupName":"发妆","type":"single","note":"","activeWhen":null,"options":["中分","偏分","深侧分","后梳","齐刘海","空气刘海","侧刘海","无刘海"],"customOptions":[]},{"id":"hair_color","name":"发色","groupId":"styling","groupName":"发妆","type":"single","note":"","activeWhen":null,"options":["自然黑","软黑","深棕","栗棕","巧克力","浅棕","蜂蜜棕","深金","浅金","亚麻金","铜红","酒红","银灰","铂金","粉色","蓝色","紫色","挑染"],"customOptions":[]},{"id":"makeup","name":"妆容","groupId":"styling","groupName":"发妆","type":"single","note":"","activeWhen":null,"options":["自然淡妆","清透裸妆","暖调妆","冷调妆","复古红唇","烟熏眼妆","柔雾妆","运动淡妆","湿润光泽","创意彩妆"],"customOptions":[]},{"id":"accessories","name":"配饰","groupId":"styling","groupName":"发妆","type":"multi","note":"","activeWhen":null,"options":["无配饰","细项链","耳钉","耳环","手镯","戒指","腰带","墨镜","发饰","围巾"],"customOptions":[]}]},{"id":"outfit","name":"服装","fields":[{"id":"outfit_mode","name":"组合","groupId":"outfit","groupName":"服装","type":"single","note":"组合决定哪些服装分区生效；成套装仍有独立上下装属性。","activeWhen":null,"options":["上下装","连衣裙","连体装","成套装"],"customOptions":[]},{"id":"footwear","name":"鞋履","groupId":"outfit","groupName":"服装","type":"single","note":"白袜不等于赤足，场景需鞋时明确设计。","activeWhen":null,"options":["运动鞋","帆布鞋","乐福鞋","平底鞋","凉鞋","高跟鞋","短靴","长靴","拖鞋","赤足"],"customOptions":[]},{"id":"socks","name":"袜类","groupId":"outfit","groupName":"服装","type":"single","note":"","activeWhen":null,"options":["无袜","短袜","中筒袜","长袜","连裤袜","薄丝袜","运动袜"],"customOptions":[]},{"id":"outerwear","name":"外搭","groupId":"outfit","groupName":"服装","type":"single","note":"","activeWhen":null,"options":["无外搭","衬衫","西装","夹克","风衣","开衫","披肩","运动外套"],"customOptions":[]}]},{"id":"upper","name":"上装","fields":[{"id":"upper_kind","name":"品类","groupId":"upper","groupName":"上装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["T恤","衬衫","吊带","罩衫","针织上衣","背心","抹胸","短上衣","胸衣背心","运动文胸","比基尼上","内衣上装","卫衣","西装上衣"],"customOptions":[]},{"id":"upper_fabric","name":"面料","groupId":"upper","groupName":"上装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["棉平纹","轻弹平针","细罗纹针","双层针织","罗马布","花卉蕾丝","弹力蕾丝","网纱","雪纺","欧根纱","薄纱","丝绒","哑光缎面","亮面缎面","真丝","亚麻","牛仔","高弹牛仔","皮革","仿皮","哑光泳布","高弹泳布","高弹运动","提花","金属微光"],"customOptions":[]},{"id":"upper_fit","name":"贴合","groupId":"upper","groupName":"上装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["宽松","正常","微修身","贴身","高弹塑形","局部贴合"],"customOptions":[]},{"id":"upper_length","name":"长度","groupId":"upper","groupName":"上装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["胸下短款","腰上短款","及腰","及臀","长罩衫"],"customOptions":[]},{"id":"upper_neckline","name":"领口","groupId":"upper","groupName":"上装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["圆领","方领","V领","深V","船领","一字领","抹胸","挂脖","高领","不对称领","垂领","心形领"],"customOptions":[]},{"id":"upper_sleeve","name":"袖型","groupId":"upper","groupName":"上装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["无袖","细肩带","宽肩带","短袖","中袖","长袖","单袖","落肩袖","泡泡袖"],"customOptions":[]},{"id":"upper_cutout","name":"镂空","groupId":"upper","groupName":"上装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["无镂空","侧腰弧形","腰侧几何","大露背式","深V露背","肩背交叉","斜角微镂","低袖窿","开放侧身","深侧开口","系带开口"],"customOptions":[]},{"id":"upper_structure","name":"结构","groupId":"upper","groupName":"上装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["简洁裁片","立体斜裁","交叉织带","细绳系结","褶皱抽绳","多层叠搭","胸挡结构","肩带承重","扣具连接","异材拼接","网纱拼接","缎面蕾丝"],"customOptions":[]},{"id":"upper_lining","name":"内衬","groupId":"upper","groupName":"上装","type":"single","note":"不得把透视外层直接等同于私密部位透出；按品类设计遮挡。","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["实色不透","全遮内衬","重点遮蔽","双层面料","微透外层"],"customOptions":[]},{"id":"upper_color","name":"颜色","groupId":"upper","groupName":"上装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["白","米白","浅粉米","黑","灰","酒红","正红","莓紫","粉","橙","黄","湖蓝","深蓝","绿","墨绿","棕","金","银","撞色","渐变","花纹"],"customOptions":[]}]},{"id":"lower","name":"下装","fields":[{"id":"lower_kind","name":"品类","groupId":"lower","groupName":"下装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["长裤","阔腿裤","牛仔裤","短裤","热裤","裙裤","半身裙","包臀裙","百褶裙","运动短裤","紧身运裤","比基尼下","内衣下装"],"customOptions":[]},{"id":"lower_fabric","name":"面料","groupId":"lower","groupName":"下装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["棉平纹","轻弹平针","细罗纹针","双层针织","罗马布","花卉蕾丝","弹力蕾丝","网纱","雪纺","欧根纱","薄纱","丝绒","哑光缎面","亮面缎面","真丝","亚麻","牛仔","高弹牛仔","皮革","仿皮","哑光泳布","高弹泳布","高弹运动","提花","金属微光"],"customOptions":[]},{"id":"lower_fit","name":"贴合","groupId":"lower","groupName":"下装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["宽松","正常","微修身","贴身","高弹塑形","局部贴合"],"customOptions":[]},{"id":"lower_length","name":"长度","groupId":"lower","groupName":"下装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["超短","短款","膝上","及膝","膝下","七分","九分","长款"],"customOptions":[]},{"id":"lower_waistline","name":"腰位","groupId":"lower","groupName":"下装","type":"single","note":"低腰也保持所需遮挡，随动作与布料位移检验。","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["高腰","中腰","低腰","极低腰"],"customOptions":[]},{"id":"lower_cutout","name":"镂空","groupId":"lower","groupName":"下装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["无镂空","侧腰弧形","腰侧几何","大露背式","深V露背","肩背交叉","斜角微镂","低袖窿","开放侧身","深侧开口","系带开口"],"customOptions":[]},{"id":"lower_structure","name":"结构","groupId":"lower","groupName":"下装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["简洁裁片","立体斜裁","交叉织带","细绳系结","褶皱抽绳","多层叠搭","胸挡结构","肩带承重","扣具连接","异材拼接","网纱拼接","缎面蕾丝"],"customOptions":[]},{"id":"lower_lining","name":"内衬","groupId":"lower","groupName":"下装","type":"single","note":"不得把透视外层直接等同于私密部位透出；按品类设计遮挡。","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["实色不透","全遮内衬","重点遮蔽","双层面料","微透外层"],"customOptions":[]},{"id":"lower_color","name":"颜色","groupId":"lower","groupName":"下装","type":"single","note":"","activeWhen":{"outfit_mode":["上下装","成套装"]},"options":["白","米白","浅粉米","黑","灰","酒红","正红","莓紫","粉","橙","黄","湖蓝","深蓝","绿","墨绿","棕","金","银","撞色","渐变","花纹"],"customOptions":[]}]},{"id":"onepiece","name":"一体装","fields":[{"id":"onepiece_kind","name":"品类","groupId":"onepiece","groupName":"一体装","type":"single","note":"","activeWhen":{"outfit_mode":["连衣裙","连体装"]},"options":["吊带裙","衬衫裙","针织裙","包臀裙","礼服","度假裙","运动裙","连体裤","连体短裤","背带裤","背带短裤","连体泳装"],"customOptions":[]},{"id":"onepiece_fabric","name":"面料","groupId":"onepiece","groupName":"一体装","type":"single","note":"","activeWhen":{"outfit_mode":["连衣裙","连体装"]},"options":["棉平纹","轻弹平针","细罗纹针","双层针织","罗马布","花卉蕾丝","弹力蕾丝","网纱","雪纺","欧根纱","薄纱","丝绒","哑光缎面","亮面缎面","真丝","亚麻","牛仔","高弹牛仔","皮革","仿皮","哑光泳布","高弹泳布","高弹运动","提花","金属微光"],"customOptions":[]},{"id":"onepiece_fit","name":"贴合","groupId":"onepiece","groupName":"一体装","type":"single","note":"","activeWhen":{"outfit_mode":["连衣裙","连体装"]},"options":["宽松","正常","微修身","贴身","高弹塑形","局部贴合"],"customOptions":[]},{"id":"onepiece_length","name":"长度","groupId":"onepiece","groupName":"一体装","type":"single","note":"","activeWhen":{"outfit_mode":["连衣裙","连体装"]},"options":["超短","短款","膝上","及膝","膝下","及踝","落地"],"customOptions":[]},{"id":"onepiece_neckline","name":"领口","groupId":"onepiece","groupName":"一体装","type":"single","note":"","activeWhen":{"outfit_mode":["连衣裙","连体装"]},"options":["圆领","方领","V领","深V","船领","一字领","抹胸","挂脖","高领","不对称领","垂领","心形领"],"customOptions":[]},{"id":"onepiece_sleeve","name":"袖型","groupId":"onepiece","groupName":"一体装","type":"single","note":"","activeWhen":{"outfit_mode":["连衣裙","连体装"]},"options":["无袖","细肩带","宽肩带","短袖","中袖","长袖","单袖","落肩袖","泡泡袖"],"customOptions":[]},{"id":"onepiece_cutout","name":"镂空","groupId":"onepiece","groupName":"一体装","type":"single","note":"","activeWhen":{"outfit_mode":["连衣裙","连体装"]},"options":["无镂空","侧腰弧形","腰侧几何","大露背式","深V露背","肩背交叉","斜角微镂","低袖窿","开放侧身","深侧开口","系带开口"],"customOptions":[]},{"id":"onepiece_structure","name":"结构","groupId":"onepiece","groupName":"一体装","type":"single","note":"","activeWhen":{"outfit_mode":["连衣裙","连体装"]},"options":["简洁裁片","立体斜裁","交叉织带","细绳系结","褶皱抽绳","多层叠搭","胸挡结构","肩带承重","扣具连接","异材拼接","网纱拼接","缎面蕾丝"],"customOptions":[]},{"id":"onepiece_lining","name":"内衬","groupId":"onepiece","groupName":"一体装","type":"single","note":"不得把透视外层直接等同于私密部位透出；按品类设计遮挡。","activeWhen":{"outfit_mode":["连衣裙","连体装"]},"options":["实色不透","全遮内衬","重点遮蔽","双层面料","微透外层"],"customOptions":[]},{"id":"onepiece_color","name":"颜色","groupId":"onepiece","groupName":"一体装","type":"single","note":"","activeWhen":{"outfit_mode":["连衣裙","连体装"]},"options":["白","米白","浅粉米","黑","灰","酒红","正红","莓紫","粉","橙","黄","湖蓝","深蓝","绿","墨绿","棕","金","银","撞色","渐变","花纹"],"customOptions":[]}]},{"id":"pose","name":"动作","fields":[{"id":"posture","name":"姿态","groupId":"pose","groupName":"动作","type":"single","note":"","activeWhen":null,"options":["自然站立","单腿承重","交叉腿站","迈步","回身","侧身倚靠","前倾扶台","背身扶台","单手撑墙","双臂撑椅","坐姿前倾","反坐椅子","侧坐","端坐","盘腿坐","坐台沿","跪坐","双膝跪姿","单膝跪姿","跪姿前倾","蹲姿","仰卧","侧卧","俯卧","躺椅半卧","伸展","旋转舞姿","低伏姿态","动态跳跃"],"customOptions":[]},{"id":"body_direction","name":"朝向","groupId":"pose","groupName":"动作","type":"single","note":"","activeWhen":null,"options":["正面","左前斜","右前斜","左侧","右侧","左后斜","右后斜","背面"],"customOptions":[]},{"id":"support","name":"支撑","groupId":"pose","groupName":"动作","type":"single","note":"按实际接触点、受力方向与重心设计；辅助支点不替代主要承重点。","activeWhen":null,"options":["双脚","单脚","椅面受力","沙发与脚","膝手受力","单膝点地","四点支撑","单手撑地","桌沿辅助","椅背辅助","墙面辅助","床面","躺椅","地面","运动器械"],"customOptions":[]},{"id":"hands","name":"手部","groupId":"pose","groupName":"动作","type":"single","note":"","activeWhen":null,"options":["自然垂落","轻扶腰侧","双掌扶台","单掌撑墙","倚搭椅背","手搭膝部","整理衣摆","扶发","举手伸展","握道具","单手侧撑","双臂垂探"],"customOptions":[]},{"id":"leg_action","name":"腿姿","groupId":"pose","groupName":"动作","type":"single","note":"","activeWhen":null,"options":["双脚自然","单腿后撤","单腿后勾","交叉腿","屈膝","腿向侧伸","双膝跪地","一膝一脚","双腿平伸","前后错落"],"customOptions":[]},{"id":"head_direction","name":"头向","groupId":"pose","groupName":"动作","type":"single","note":"","activeWhen":null,"options":["正向","左转","右转","回眸","低头","微仰头","轻侧倾","侧脸","头部离镜"],"customOptions":[]},{"id":"gaze","name":"视线","groupId":"pose","groupName":"动作","type":"single","note":"","activeWhen":null,"options":["直视镜头","看镜头旁","看远处","向下看","侧向看","自然闭眼","跟随动作","无脸构图"],"customOptions":[]},{"id":"emotion","name":"情绪","groupId":"pose","groupName":"动作","type":"single","note":"通过眼睑、眉形、嘴角与面颊共同实现，不默认半眯眼或固定微笑。","activeWhen":null,"options":["自然放松","开朗大笑","轻快微笑","俏皮得意","好奇","惊喜","温柔","沉思","冷静","自信","挑衅","妩媚","撩人","慵懒","魅惑","热烈","疏离","倔强","羞涩开心","短暂紧张","疲惫放松","复杂笑意"],"customOptions":[]}]},{"id":"space","name":"空间","fields":[{"id":"space_type","name":"环境","groupId":"space","groupName":"空间","type":"single","note":"","activeWhen":null,"options":["室内","室外","半开放","摄影棚"],"customOptions":[]},{"id":"location","name":"地点","groupId":"space","groupName":"空间","type":"single","note":"","activeWhen":null,"options":["现代公寓","厨房","书房","卧室","剧院后台","走廊","咖啡馆","图书馆","健身空间","舞蹈空间","酒店","工业空间","庭院","露台","城市街道","车站","停车场","海岸","泳池","湖岸","山路","草原","花园","黑棚","白棚","彩色棚"],"customOptions":[]},{"id":"space_style","name":"风格","groupId":"space","groupName":"空间","type":"single","note":"","activeWhen":null,"options":["现代简洁","复古","工业","自然质朴","轻奢","未来感","极简棚景","电影布景"],"customOptions":[]},{"id":"time_weather","name":"时天气","groupId":"space","groupName":"空间","type":"single","note":"","activeWhen":null,"options":["清晨","午后","黄昏","夜晚","晴天","阴天","雨后","暴雨","薄雾","雪天","室内暖光"],"customOptions":[]},{"id":"environment_relation","name":"关系","groupId":"space","groupName":"空间","type":"single","note":"","activeWhen":null,"options":["自然停留","靠近窗边","扶靠台面","坐在椅面","沿路移动","水中站立","岸边倚靠","器械运动","卧躺休息","背景分离"],"customOptions":[]},{"id":"props","name":"道具","groupId":"space","groupName":"空间","type":"multi","note":"只按情境需要使用，不默认放杯子；明确移除的道具不得复现。","activeWhen":null,"options":["无道具","椅子","工作桌","栏杆","窗框","沙发","躺椅","运动器械","小包","花束","雨伞","杯子"],"customOptions":[]}]},{"id":"camera","name":"摄影","fields":[{"id":"camera_height","name":"高度","groupId":"camera","groupName":"摄影","type":"single","note":"","activeWhen":null,"options":["平视","略高","高位俯拍","略低","低位仰拍","贴地","顶视"],"customOptions":[]},{"id":"camera_angle","name":"方位","groupId":"camera","groupName":"摄影","type":"single","note":"","activeWhen":null,"options":["正前","左前斜","右前斜","侧面","左后斜","右后斜","正后","主观视角"],"customOptions":[]},{"id":"lens","name":"焦段","groupId":"camera","groupName":"摄影","type":"single","note":"近距离广角须抑制头部、手脚及躯干畸变，不用焦段替代空间描述。","activeWhen":null,"options":["24mm","35mm","50mm","65mm","85mm","105焦","135焦"],"customOptions":[]},{"id":"composition","name":"构图","groupId":"camera","groupName":"摄影","type":"single","note":"","activeWhen":null,"options":["中心","三分","偏置留白","对角线","框景","前景遮挡","深度层次","局部裁切","负空间","环境叙事"],"customOptions":[]},{"id":"lighting","name":"光线","groupId":"camera","groupName":"摄影","type":"single","note":"","activeWhen":null,"options":["窗边柔光","阴天漫射","午后硬光","逆光轮廓","侧光","顶侧光","冷暖双色","霓虹色光","柔光箱漫","定点聚光","背景投影","夜色街光"],"customOptions":[]},{"id":"imaging","name":"成像","groupId":"camera","groupName":"摄影","type":"single","note":"","activeWhen":null,"options":["自然色彩","暖调","冷调","电影色彩","低饱和","鲜明反差","黑白","轻颗粒"],"customOptions":[]},{"id":"notes","name":"附加","groupId":"camera","groupName":"摄影","type":"text","note":"保存用户原意；明确锁定与禁止项优先。","activeWhen":null,"options":[],"customOptions":[]}]}],"totalGroups":11,"totalFields":85,"totalDefaultOptions":949};
-
-window.DEFAULT_PRESETS_DATA = [];
+window.DEFAULT_OPTIONS_DATA = {
+  "version": "0.70.0",
+  "groups": [
+    {
+      "id": "overview",
+      "name": "创作",
+      "fields": [
+        {
+          "id": "theme",
+          "name": "风格主题",
+          "groupId": "overview",
+          "groupName": "创作",
+          "type": "single",
+          "note": "确立整组摄影的拍摄企划、地域美学与影调灵魂，决定画面的整体视觉方向。",
+          "activeWhen": null,
+          "options": [
+            "日系清透写真",
+            "韩系极简氛围",
+            "法式慵懒随性",
+            "港风复古胶片",
+            "欧美高定时装",
+            "新中式清冷雅韵",
+            "纯欲私房漫度",
+            "海边度假旅拍",
+            "街头潮流抓拍",
+            "电影叙事大片",
+            "复古柯达胶片",
+            "原生日常纪实"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "tension",
+          "name": "张力",
+          "groupId": "overview",
+          "groupName": "创作",
+          "type": "single",
+          "note": "描述审美强度，不能自动推导为更少衣物或性行为。",
+          "activeWhen": null,
+          "options": [
+            "清新自然",
+            "温柔亲近",
+            "成熟优雅",
+            "俏皮明艳",
+            "慵懒妩媚",
+            "冷艳疏离",
+            "热烈自信",
+            "含蓄暧昧",
+            "强烈吸引",
+            "极致视觉冲击"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "aspect_ratio",
+          "name": "画幅",
+          "groupId": "overview",
+          "groupName": "创作",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "9:16",
+            "3:4",
+            "2:3",
+            "4:5",
+            "1:1",
+            "4:3",
+            "3:2",
+            "16:9",
+            "16:10"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "framing",
+          "name": "范围",
+          "groupId": "overview",
+          "groupName": "创作",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "全身",
+            "七分身",
+            "半身",
+            "肩部肖像",
+            "面部特写",
+            "环境人像",
+            "局部裁切",
+            "背身无脸"
+          ],
+          "customOptions": []
+        }
+      ]
+    },
+    {
+      "id": "identity",
+      "name": "人物",
+      "fields": [
+        {
+          "id": "age",
+          "name": "年龄",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "精选黄金成年人像摄影年龄段（18~40岁），合规安全。若有特殊具体岁数需求，可通过自建选项添加。",
+          "activeWhen": null,
+          "minimum": 18,
+          "options": [
+            "18–20岁",
+            "21–25岁",
+            "26–30岁",
+            "31–35岁",
+            "36–40岁"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "ancestry",
+          "name": "人群",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "作为视觉创作方向；不把国籍、人种与固定脸型或肤色等同，不套民族服装。混合须具体设计骨相。",
+          "activeWhen": null,
+          "options": [
+            "东亚",
+            "东南亚",
+            "南亚",
+            "中亚",
+            "西亚",
+            "北欧",
+            "东欧",
+            "西欧",
+            "南欧",
+            "北非",
+            "西非",
+            "东非",
+            "中非",
+            "南部非洲",
+            "加勒比",
+            "拉美",
+            "大洋洲",
+            "多地域混合"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "face_shape",
+          "name": "脸型",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "鹅蛋脸",
+            "圆脸",
+            "长脸",
+            "方脸",
+            "圆方脸",
+            "心形脸",
+            "菱形脸",
+            "梨形脸",
+            "窄长脸",
+            "宽短脸",
+            "柔和矩形脸"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "bone_structure",
+          "name": "骨相",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "宽颧柔颌",
+            "高颧窄颌",
+            "低颧饱满",
+            "清晰方颌",
+            "柔和圆颌",
+            "宽额窄颌",
+            "窄额宽颌",
+            "深眼窝",
+            "浅眼窝",
+            "长中庭",
+            "短中庭",
+            "自然不对称"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "eyes",
+          "name": "眼形",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "杏眼",
+            "圆眼",
+            "细长眼",
+            "上扬眼",
+            "下垂眼",
+            "深眼窝眼",
+            "宽眼距",
+            "近眼距",
+            "内双",
+            "单眼皮",
+            "自然双眼皮"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "nose",
+          "name": "鼻形",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "低鼻根柔鼻尖",
+            "直鼻梁",
+            "高鼻根",
+            "微弧鼻梁",
+            "宽鼻翼",
+            "窄鼻翼",
+            "圆鼻尖",
+            "上翘鼻尖",
+            "长鼻",
+            "短鼻"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "lips",
+          "name": "唇形",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "薄唇",
+            "饱满唇",
+            "上薄下厚",
+            "上厚下薄",
+            "清晰唇峰",
+            "柔和唇峰",
+            "宽嘴角",
+            "小唇形",
+            "自然不对称"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "brows",
+          "name": "眉形",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "平直眉",
+            "弧形眉",
+            "上扬眉",
+            "自然粗眉",
+            "细长眉",
+            "短眉",
+            "浅淡眉",
+            "浓密眉"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "skin_tone",
+          "name": "肤色",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "地域与肤色互不自动绑定。",
+          "activeWhen": null,
+          "options": [
+            "冷白",
+            "中性白",
+            "暖白",
+            "浅米",
+            "暖米",
+            "橄榄",
+            "蜜色",
+            "古铜",
+            "棕色",
+            "深棕",
+            "深色"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "skin_character",
+          "name": "皮肤",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "强调真实人类生理微观皮肤光学，保留次表面散射、自然毛孔与原生微瑕，杜绝塑料磨皮假感。",
+          "activeWhen": null,
+          "options": [
+            "原生微毛孔",
+            "水光微汗",
+            "自然微透",
+            "微泛红",
+            "轻微晒痕",
+            "自然痣点",
+            "雀斑",
+            "自然均匀",
+            "轻微年龄纹理",
+            "少量晒斑",
+            "局部泛红",
+            "健康微汗"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "hair",
+          "name": "发型",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "利落短发",
+            "精灵短发",
+            "短鲍勃",
+            "齐肩直发",
+            "齐肩波浪",
+            "中长直发",
+            "中长卷发",
+            "长直发",
+            "长波浪",
+            "自然卷",
+            "高马尾",
+            "低马尾",
+            "高丸子",
+            "低盘发",
+            "双辫",
+            "单辫",
+            "半扎发",
+            "湿发后梳"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "hair_part",
+          "name": "分缝",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "中分",
+            "偏分",
+            "深侧分",
+            "后梳",
+            "齐刘海",
+            "空气刘海",
+            "侧刘海",
+            "无刘海"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "hair_color",
+          "name": "发色",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "自然黑",
+            "软黑",
+            "深棕",
+            "栗棕",
+            "巧克力",
+            "浅棕",
+            "蜂蜜棕",
+            "深金",
+            "浅金",
+            "亚麻金",
+            "铜红",
+            "酒红",
+            "银灰",
+            "铂金",
+            "粉色",
+            "蓝色",
+            "紫色",
+            "挑染"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "makeup",
+          "name": "妆容",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "自然淡妆",
+            "清透裸妆",
+            "暖调妆",
+            "冷调妆",
+            "复古红唇",
+            "烟熏眼妆",
+            "柔雾妆",
+            "运动淡妆",
+            "湿润光泽",
+            "创意彩妆"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "accessories",
+          "name": "配饰",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "multi",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "无配饰",
+            "细项链",
+            "耳钉",
+            "耳环",
+            "手镯",
+            "戒指",
+            "腰带",
+            "墨镜",
+            "发饰",
+            "围巾"
+          ],
+          "customOptions": []
+        }
+      ]
+    },
+    {
+      "id": "body",
+      "name": "身材",
+      "fields": [
+        {
+          "id": "height",
+          "name": "身高",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "自定义以cm输入。",
+          "activeWhen": null,
+          "options": [
+            "145–149cm",
+            "150–154cm",
+            "155–159cm",
+            "160–164cm",
+            "165–169cm",
+            "170–174cm",
+            "175–179cm",
+            "180–184cm",
+            "185–189cm"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "figure",
+          "name": "体型",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "整体轮廓独立于局部尺寸。L6允许现实难以存在的比例，但保持真人实拍质感、连续结构、真实重力；不得自动设为默认。",
+          "activeWhen": null,
+          "options": [
+            "L1纤细",
+            "L2匀称",
+            "L3运动",
+            "L4丰腴",
+            "L5强沙漏",
+            "L6超现实沙漏"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "bust_size",
+          "name": "胸围",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "这是视觉尺寸级别，不能当作罩杯或胸围厘米值。精确胸围使用自定义cm并补下胸围。",
+          "activeWhen": null,
+          "options": [
+            "纤小",
+            "偏小",
+            "中等",
+            "饱满",
+            "丰满",
+            "很丰满",
+            "夸张",
+            "超现实"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "cup",
+          "name": "罩杯",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "罩杯随下胸围和尺码体系变化，不能单独对应体积；自定义需指定体系，厘米三围与罩杯冲突时先协调。",
+          "activeWhen": null,
+          "options": [
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "J",
+            "K",
+            "L及以上"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "underbust",
+          "name": "下胸围",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "辅助尺寸；未给出时按体型设计，不伪称精确测量。",
+          "activeWhen": null,
+          "options": [
+            "60–64cm",
+            "65–69cm",
+            "70–74cm",
+            "75–79cm",
+            "80–84cm",
+            "85–89cm",
+            "90–94cm",
+            "95–99cm"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "bust_shape",
+          "name": "胸型",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "是自然轮廓；穿衣后的轮廓须再考虑内衬、支撑、重力与姿态。",
+          "activeWhen": null,
+          "options": [
+            "自然水滴",
+            "圆润饱满",
+            "宽底柔和",
+            "窄底集中",
+            "上部饱满",
+            "下部饱满",
+            "自然外展",
+            "自然下垂",
+            "轻微不对称"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "waist",
+          "name": "腰部",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "自然腰线",
+            "偏直腰",
+            "柔和收腰",
+            "细腰",
+            "明显收腰",
+            "极细腰",
+            "超现实细腰"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "hips_size",
+          "name": "臀围",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "视觉尺度；精确臀围以cm自定义，与体型及腰臀比例协调。",
+          "activeWhen": null,
+          "options": [
+            "窄",
+            "偏窄",
+            "中等",
+            "饱满",
+            "宽",
+            "很宽",
+            "夸张",
+            "超现实"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "hips_shape",
+          "name": "臀型",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "圆臀",
+            "桃臀",
+            "心形",
+            "倒心形",
+            "梨形",
+            "方臀",
+            "宽扁臀",
+            "自然下垂",
+            "上翘",
+            "运动紧实",
+            "柔软饱满",
+            "轻微不对称"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "waist_hip_ratio",
+          "name": "腰臀比",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "默认用视觉关系；数值自定义按腰围÷臀围计算，不冒充从图片量得的精确值。",
+          "activeWhen": null,
+          "options": [
+            "自然平缓",
+            "柔和反差",
+            "明显反差",
+            "强烈反差",
+            "超现实反差"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "shoulders",
+          "name": "肩线",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "窄肩",
+            "中等肩",
+            "宽肩",
+            "平肩",
+            "微溜肩",
+            "运动肩"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "legs",
+          "name": "腿部",
+          "groupId": "body",
+          "groupName": "身材",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "纤细",
+            "匀称",
+            "肌肉清晰",
+            "柔软丰满",
+            "修长",
+            "短腿比例",
+            "自然曲线"
+          ],
+          "customOptions": []
+        }
+      ]
+    },
+    {
+      "id": "outfit",
+      "name": "服装",
+      "fields": [
+        {
+          "id": "outfit_mode",
+          "name": "组合",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "组合决定哪些服装分区生效；成套装仍有独立上下装属性。",
+          "activeWhen": null,
+          "options": [
+            "上下装",
+            "连衣裙",
+            "连体装",
+            "成套装"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "upper_kind",
+          "name": "品类",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "T恤",
+            "衬衫",
+            "吊带",
+            "罩衫",
+            "针织上衣",
+            "背心",
+            "抹胸",
+            "短上衣",
+            "胸衣式上装",
+            "运动文胸",
+            "比基尼上装",
+            "内衣上装",
+            "卫衣",
+            "西装上衣"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "upper_fabric",
+          "name": "面料",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "棉平纹",
+            "轻薄弹力平纹针织",
+            "细罗纹针织",
+            "双层针织",
+            "罗马布",
+            "花卉蕾丝",
+            "弹力蕾丝",
+            "网纱",
+            "雪纺",
+            "欧根纱",
+            "薄纱",
+            "丝绒",
+            "哑光缎面",
+            "亮面缎面",
+            "真丝",
+            "亚麻",
+            "牛仔",
+            "高弹牛仔",
+            "皮革",
+            "仿皮",
+            "哑光泳装布",
+            "竞技泳装布",
+            "弹力运动布",
+            "提花",
+            "金属感织物"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "upper_fit",
+          "name": "贴合",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "宽松",
+            "正常",
+            "微修身",
+            "贴身",
+            "高弹塑形",
+            "局部贴合"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "upper_length",
+          "name": "长度",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "胸下短款",
+            "腰上短款",
+            "及腰",
+            "及臀",
+            "长罩衫"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "upper_neckline",
+          "name": "领口",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "圆领",
+            "方领",
+            "V领",
+            "深V",
+            "船领",
+            "一字领",
+            "抹胸",
+            "挂脖",
+            "高领",
+            "不对称领",
+            "垂领",
+            "心形领"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "upper_sleeve",
+          "name": "袖型",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "无袖",
+            "细肩带",
+            "宽肩带",
+            "短袖",
+            "中袖",
+            "长袖",
+            "单袖",
+            "落肩袖",
+            "泡泡袖"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "upper_cutout",
+          "name": "镂空",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "无镂空",
+            "侧腰弧形",
+            "腰侧几何",
+            "背部大开口",
+            "后背深开叉",
+            "肩背交叉",
+            "不对称开口",
+            "低袖窿",
+            "开放侧身",
+            "深侧开口",
+            "系带开口"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "upper_color",
+          "name": "颜色",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "白",
+            "米白",
+            "浅粉米",
+            "黑",
+            "灰",
+            "酒红",
+            "正红",
+            "莓紫",
+            "粉",
+            "橙",
+            "黄",
+            "湖蓝",
+            "深蓝",
+            "绿",
+            "墨绿",
+            "棕",
+            "金",
+            "银",
+            "撞色",
+            "渐变",
+            "花纹"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "lower_kind",
+          "name": "品类",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "长裤",
+            "阔腿裤",
+            "牛仔裤",
+            "短裤",
+            "热裤",
+            "裙裤",
+            "半身裙",
+            "包臀裙",
+            "百褶裙",
+            "运动短裤",
+            "紧身运动裤",
+            "比基尼下装",
+            "内衣下装"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "lower_fabric",
+          "name": "面料",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "棉平纹",
+            "轻薄弹力平纹针织",
+            "细罗纹针织",
+            "双层针织",
+            "罗马布",
+            "花卉蕾丝",
+            "弹力蕾丝",
+            "网纱",
+            "雪纺",
+            "欧根纱",
+            "薄纱",
+            "丝绒",
+            "哑光缎面",
+            "亮面缎面",
+            "真丝",
+            "亚麻",
+            "牛仔",
+            "高弹牛仔",
+            "皮革",
+            "仿皮",
+            "哑光泳装布",
+            "竞技泳装布",
+            "弹力运动布",
+            "提花",
+            "金属感织物"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "lower_fit",
+          "name": "贴合",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "宽松",
+            "正常",
+            "微修身",
+            "贴身",
+            "高弹塑形",
+            "局部贴合"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "lower_length",
+          "name": "长度",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "超短",
+            "短款",
+            "膝上",
+            "及膝",
+            "膝下",
+            "七分",
+            "九分",
+            "长款"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "lower_waistline",
+          "name": "腰位",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "低腰也保持所需遮挡，随动作与布料位移检验。",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "高腰",
+            "中腰",
+            "低腰",
+            "极低腰"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "lower_cutout",
+          "name": "镂空",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "无镂空",
+            "侧腰弧形",
+            "腰侧几何",
+            "背部大开口",
+            "后背深开叉",
+            "肩背交叉",
+            "不对称开口",
+            "低袖窿",
+            "开放侧身",
+            "深侧开口",
+            "系带开口"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "lower_color",
+          "name": "颜色",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "上下装",
+              "成套装"
+            ]
+          },
+          "options": [
+            "白",
+            "米白",
+            "浅粉米",
+            "黑",
+            "灰",
+            "酒红",
+            "正红",
+            "莓紫",
+            "粉",
+            "橙",
+            "黄",
+            "湖蓝",
+            "深蓝",
+            "绿",
+            "墨绿",
+            "棕",
+            "金",
+            "银",
+            "撞色",
+            "渐变",
+            "花纹"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "onepiece_kind",
+          "name": "品类",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "连衣裙",
+              "连体装"
+            ]
+          },
+          "options": [
+            "吊带裙",
+            "衬衫裙",
+            "针织裙",
+            "包臀裙",
+            "礼服",
+            "度假裙",
+            "运动裙",
+            "连体裤",
+            "连体短裤",
+            "背带裤",
+            "背带短裤",
+            "连体泳装"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "onepiece_fabric",
+          "name": "面料",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "连衣裙",
+              "连体装"
+            ]
+          },
+          "options": [
+            "棉平纹",
+            "轻薄弹力平纹针织",
+            "细罗纹针织",
+            "双层针织",
+            "罗马布",
+            "花卉蕾丝",
+            "弹力蕾丝",
+            "网纱",
+            "雪纺",
+            "欧根纱",
+            "薄纱",
+            "丝绒",
+            "哑光缎面",
+            "亮面缎面",
+            "真丝",
+            "亚麻",
+            "牛仔",
+            "高弹牛仔",
+            "皮革",
+            "仿皮",
+            "哑光泳装布",
+            "竞技泳装布",
+            "弹力运动布",
+            "提花",
+            "金属感织物"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "onepiece_fit",
+          "name": "贴合",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "连衣裙",
+              "连体装"
+            ]
+          },
+          "options": [
+            "宽松",
+            "正常",
+            "微修身",
+            "贴身",
+            "高弹塑形",
+            "局部贴合"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "onepiece_length",
+          "name": "长度",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "连衣裙",
+              "连体装"
+            ]
+          },
+          "options": [
+            "超短",
+            "短款",
+            "膝上",
+            "及膝",
+            "膝下",
+            "及踝",
+            "落地"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "onepiece_neckline",
+          "name": "领口",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "连衣裙",
+              "连体装"
+            ]
+          },
+          "options": [
+            "圆领",
+            "方领",
+            "V领",
+            "深V",
+            "船领",
+            "一字领",
+            "抹胸",
+            "挂脖",
+            "高领",
+            "不对称领",
+            "垂领",
+            "心形领"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "onepiece_sleeve",
+          "name": "袖型",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "连衣裙",
+              "连体装"
+            ]
+          },
+          "options": [
+            "无袖",
+            "细肩带",
+            "宽肩带",
+            "短袖",
+            "中袖",
+            "长袖",
+            "单袖",
+            "落肩袖",
+            "泡泡袖"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "onepiece_cutout",
+          "name": "镂空",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "连衣裙",
+              "连体装"
+            ]
+          },
+          "options": [
+            "无镂空",
+            "侧腰弧形",
+            "腰侧几何",
+            "背部大开口",
+            "后背深开叉",
+            "肩背交叉",
+            "不对称开口",
+            "低袖窿",
+            "开放侧身",
+            "深侧开口",
+            "系带开口"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "onepiece_color",
+          "name": "颜色",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": {
+            "outfit_mode": [
+              "连衣裙",
+              "连体装"
+            ]
+          },
+          "options": [
+            "白",
+            "米白",
+            "浅粉米",
+            "黑",
+            "灰",
+            "酒红",
+            "正红",
+            "莓紫",
+            "粉",
+            "橙",
+            "黄",
+            "湖蓝",
+            "深蓝",
+            "绿",
+            "墨绿",
+            "棕",
+            "金",
+            "银",
+            "撞色",
+            "渐变",
+            "花纹"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear",
+          "name": "外搭款式",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "大片级视觉核心：外搭占据画面大幅轮廓与层次，极大影响气场与风格。",
+          "activeWhen": null,
+          "options": [
+            "无外搭",
+            "廓形西装",
+            "经典风衣",
+            "羊绒长大衣",
+            "慵懒针织开衫",
+            "机车皮夹克",
+            "粗花呢小香风",
+            "复古牛仔外套",
+            "哑光麂皮夹克",
+            "羊羔毛外套",
+            "透光轻薄衬衫",
+            "羊绒披肩斗篷",
+            "居家睡衣外套",
+            "丝绸晨袍睡袍",
+            "防晒轻薄罩衫",
+            "棒球夹克"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear_fabric",
+          "name": "外搭面料",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "决定外搭的质感反光与垂坠重力。",
+          "activeWhen": null,
+          "options": [
+            "重磅精纺羊毛",
+            "双面细腻羊绒",
+            "复古水洗真皮",
+            "细腻哑光麂皮",
+            "垂坠风衣华达呢",
+            "粗花呢编织织物",
+            "真丝素绉缎",
+            "真丝双绉",
+            "透光乔其纱",
+            "复古丝绒",
+            "柔软羊毛针织",
+            "蓬松软糯马海毛",
+            "挺括水洗牛仔",
+            "透光轻盈亚麻真丝",
+            "纯棉平纹",
+            "醋酸高级缎面"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear_wear",
+          "name": "穿法体态",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "外搭穿法是松弛感与大片气场的视觉灵魂。",
+          "activeWhen": null,
+          "options": [
+            "敞开衣襟迎风",
+            "随意披在肩上",
+            "腰带随性系结",
+            "单侧滑落露肩",
+            "双手插兜微敞",
+            "扣好立领修身",
+            "随意挽起袖口",
+            "半搭半落慵懒姿态",
+            "胸前自然垂坠敞开",
+            "自然系扣修身"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear_fit",
+          "name": "外搭版型",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "外搭剪裁轮廓与廓形张力。",
+          "activeWhen": null,
+          "options": [
+            "超大廓形(Oversized)",
+            "修身收腰剪裁",
+            "自然垂坠直筒",
+            "经典落肩阔型",
+            "微收腰中长款",
+            "箱型短阔版型"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear_length",
+          "name": "外搭长度",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "外搭衣长比例。",
+          "activeWhen": null,
+          "options": [
+            "及腰短款",
+            "及臀中短款",
+            "及膝中长款",
+            "过膝长款",
+            "及踝超长款"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear_color",
+          "name": "外搭颜色",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "外搭主体色系。",
+          "activeWhen": null,
+          "options": [
+            "经典驼色",
+            "燕麦奶白",
+            "深炭灰",
+            "纯黑",
+            "焦糖暖棕",
+            "勃艮第酒红",
+            "橄榄绿",
+            "复古藏青",
+            "水洗浅蓝",
+            "温柔莫兰迪粉",
+            "浅香槟米",
+            "复古墨绿",
+            "雾霾蓝",
+            "咖啡棕"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "socks",
+          "name": "袜类",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "无袜",
+            "短袜",
+            "中筒袜",
+            "长袜",
+            "连裤袜",
+            "薄丝袜",
+            "运动袜"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "footwear",
+          "name": "鞋履",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "白袜不等于赤足，场景需鞋时明确设计。",
+          "activeWhen": null,
+          "options": [
+            "运动鞋",
+            "帆布鞋",
+            "乐福鞋",
+            "平底鞋",
+            "凉鞋",
+            "高跟鞋",
+            "短靴",
+            "长靴",
+            "拖鞋",
+            "赤足"
+          ],
+          "customOptions": []
+        }
+      ]
+    },
+    {
+      "id": "pose",
+      "name": "动作",
+      "fields": [
+        {
+          "id": "posture",
+          "name": "姿态",
+          "groupId": "pose",
+          "groupName": "动作",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "自然站立",
+            "单腿承重",
+            "交叉腿站",
+            "迈步",
+            "回身",
+            "侧身倚靠",
+            "前倾扶台",
+            "背身扶台",
+            "单手撑墙",
+            "双手撑椅背",
+            "坐姿前倾",
+            "反坐椅子",
+            "侧坐",
+            "端坐",
+            "盘腿坐",
+            "坐台沿",
+            "跪坐",
+            "双膝跪姿",
+            "单膝跪姿",
+            "跪姿前倾",
+            "蹲姿",
+            "仰卧",
+            "侧卧",
+            "俯卧",
+            "躺椅半卧",
+            "伸展",
+            "旋转舞姿",
+            "低姿态运动",
+            "动态跳跃"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "body_direction",
+          "name": "朝向",
+          "groupId": "pose",
+          "groupName": "动作",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "正面",
+            "左前斜",
+            "右前斜",
+            "左侧",
+            "右侧",
+            "左后斜",
+            "右后斜",
+            "背面"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "support",
+          "name": "支撑",
+          "groupId": "pose",
+          "groupName": "动作",
+          "type": "single",
+          "note": "按实际接触点、受力方向与重心设计；辅助支点不替代主要承重点。",
+          "activeWhen": null,
+          "options": [
+            "双脚",
+            "单脚",
+            "椅面与双脚",
+            "沙发与脚",
+            "双膝与双掌",
+            "单膝与一脚",
+            "双手与双脚",
+            "单手与双脚",
+            "桌沿辅助",
+            "椅背辅助",
+            "墙面辅助",
+            "床面",
+            "躺椅",
+            "地面",
+            "运动器械"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "hands",
+          "name": "手部",
+          "groupId": "pose",
+          "groupName": "动作",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "自然垂落",
+            "轻扶腰侧",
+            "双掌扶台",
+            "单掌撑墙",
+            "前臂搭椅背",
+            "手搭膝部",
+            "整理衣摆",
+            "扶发",
+            "举手伸展",
+            "握道具",
+            "一手支撑一手放松",
+            "双臂向前下伸"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "leg_action",
+          "name": "腿姿",
+          "groupId": "pose",
+          "groupName": "动作",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "双脚自然",
+            "单腿后撤",
+            "单腿后勾",
+            "交叉腿",
+            "屈膝",
+            "腿向侧伸",
+            "双膝跪地",
+            "一膝一脚",
+            "双腿平伸",
+            "坐姿腿错开"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "head_direction",
+          "name": "头向",
+          "groupId": "pose",
+          "groupName": "动作",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "正向",
+            "左转",
+            "右转",
+            "回眸",
+            "低头",
+            "微仰头",
+            "轻侧倾",
+            "侧脸",
+            "头部离镜"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "gaze",
+          "name": "视线",
+          "groupId": "pose",
+          "groupName": "动作",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "直视镜头",
+            "看镜头旁",
+            "看远处",
+            "向下看",
+            "侧向看",
+            "自然闭眼",
+            "跟随动作",
+            "无脸构图"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "emotion",
+          "name": "情绪",
+          "groupId": "pose",
+          "groupName": "动作",
+          "type": "single",
+          "note": "通过眼睑、眉形、嘴角与面颊共同实现，不默认半眯眼或固定微笑。",
+          "activeWhen": null,
+          "options": [
+            "自然放松",
+            "开朗大笑",
+            "轻快微笑",
+            "俏皮得意",
+            "好奇",
+            "惊喜",
+            "温柔",
+            "沉思",
+            "冷静",
+            "自信",
+            "挑衅",
+            "妩媚",
+            "撩人",
+            "慵懒",
+            "魅惑",
+            "热烈",
+            "疏离",
+            "倔强",
+            "羞涩开心",
+            "短暂紧张",
+            "疲惫放松",
+            "复杂笑意"
+          ],
+          "customOptions": []
+        }
+      ]
+    },
+    {
+      "id": "space",
+      "name": "空间",
+      "fields": [
+        {
+          "id": "space_type",
+          "name": "环境",
+          "groupId": "space",
+          "groupName": "空间",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "室内",
+            "室外",
+            "半开放",
+            "摄影棚"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "location",
+          "name": "地点",
+          "groupId": "space",
+          "groupName": "空间",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "现代公寓",
+            "厨房",
+            "书房",
+            "卧室",
+            "剧院后台",
+            "走廊",
+            "咖啡馆",
+            "图书馆",
+            "健身空间",
+            "舞蹈空间",
+            "酒店",
+            "工业空间",
+            "庭院",
+            "露台",
+            "城市街道",
+            "车站",
+            "停车场",
+            "海岸",
+            "泳池",
+            "湖岸",
+            "山路",
+            "草原",
+            "花园",
+            "黑棚",
+            "白棚",
+            "彩色棚"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "space_style",
+          "name": "风格",
+          "groupId": "space",
+          "groupName": "空间",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "现代简洁",
+            "复古",
+            "工业",
+            "自然质朴",
+            "轻奢",
+            "未来感",
+            "极简棚景",
+            "电影布景"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "time_weather",
+          "name": "时天气",
+          "groupId": "space",
+          "groupName": "空间",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "清晨",
+            "午后",
+            "黄昏",
+            "夜晚",
+            "晴天",
+            "阴天",
+            "雨后",
+            "暴雨",
+            "薄雾",
+            "雪天",
+            "人工室内光"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "environment_relation",
+          "name": "关系",
+          "groupId": "space",
+          "groupName": "空间",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "自然停留",
+            "靠近窗边",
+            "扶靠台面",
+            "坐在椅面",
+            "沿路移动",
+            "水中站立",
+            "岸边倚靠",
+            "器械运动",
+            "卧躺休息",
+            "背景分离"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "props",
+          "name": "道具",
+          "groupId": "space",
+          "groupName": "空间",
+          "type": "multi",
+          "note": "只按情境需要使用，不默认放杯子；明确移除的道具不得复现。",
+          "activeWhen": null,
+          "options": [
+            "无道具",
+            "椅子",
+            "工作桌",
+            "栏杆",
+            "窗框",
+            "沙发",
+            "躺椅",
+            "运动器械",
+            "小包",
+            "花束",
+            "雨伞",
+            "杯子"
+          ],
+          "customOptions": []
+        }
+      ]
+    },
+    {
+      "id": "camera",
+      "name": "摄影",
+      "fields": [
+        {
+          "id": "camera_height",
+          "name": "高度",
+          "groupId": "camera",
+          "groupName": "摄影",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "平视",
+            "略高",
+            "高位俯拍",
+            "略低",
+            "低位仰拍",
+            "贴地",
+            "顶视"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "camera_angle",
+          "name": "方位",
+          "groupId": "camera",
+          "groupName": "摄影",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "正前",
+            "左前斜",
+            "右前斜",
+            "侧面",
+            "左后斜",
+            "右后斜",
+            "正后",
+            "主观视角"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "lens",
+          "name": "焦段",
+          "groupId": "camera",
+          "groupName": "摄影",
+          "type": "single",
+          "note": "近距离广角须抑制头部、手脚及躯干畸变，不用焦段替代空间描述。",
+          "activeWhen": null,
+          "options": [
+            "24mm",
+            "35mm",
+            "50mm",
+            "65mm",
+            "85mm",
+            "105mm",
+            "135mm"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "composition",
+          "name": "构图",
+          "groupId": "camera",
+          "groupName": "摄影",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "中心",
+            "三分",
+            "偏置留白",
+            "对角线",
+            "框景",
+            "前景遮挡",
+            "深度层次",
+            "局部裁切",
+            "负空间",
+            "环境叙事"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "lighting",
+          "name": "光线",
+          "groupId": "camera",
+          "groupName": "摄影",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "窗边柔光",
+            "阴天漫射",
+            "午后硬光",
+            "逆光轮廓",
+            "侧光",
+            "顶侧光",
+            "冷暖双色",
+            "霓虹色光",
+            "棚拍大柔光",
+            "小面积聚光",
+            "背景投影",
+            "夜景实用光"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "imaging",
+          "name": "成像",
+          "groupId": "camera",
+          "groupName": "摄影",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "自然色彩",
+            "暖调",
+            "冷调",
+            "电影色彩",
+            "低饱和",
+            "高色彩反差",
+            "黑白",
+            "轻颗粒"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "notes",
+          "name": "附加",
+          "groupId": "camera",
+          "groupName": "摄影",
+          "type": "text",
+          "note": "保存用户原意；明确锁定与禁止项优先。",
+          "activeWhen": null,
+          "options": [],
+          "customOptions": []
+        }
+      ]
+    }
+  ]
+};

@@ -150,6 +150,30 @@ fn save_history_record(record_json: String) -> Result<bool, String> {
     }
 }
 
+#[tauri::command]
+fn delete_history_record(id: String) -> Result<bool, String> {
+    let file = get_history_file();
+    if !file.exists() {
+        return Ok(true);
+    }
+    let content = fs::read_to_string(&file).unwrap_or_else(|_| "[]".to_string());
+    let mut list: Vec<serde_json::Value> = serde_json::from_str(&content).unwrap_or_else(|_| vec![]);
+    list.retain(|item| {
+        item.get("id").and_then(|v| v.as_str()) != Some(&id)
+    });
+    let serialized = serde_json::to_string_pretty(&list)
+        .map_err(|e| format!("序列化失败: {}", e))?;
+    fs::write(&file, serialized).map_err(|e| format!("写入历史文件失败: {}", e))?;
+    Ok(true)
+}
+
+#[tauri::command]
+fn clear_history_records() -> Result<bool, String> {
+    let file = get_history_file();
+    fs::write(&file, "[]").map_err(|e| format!("清空历史文件失败: {}", e))?;
+    Ok(true)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -161,7 +185,9 @@ fn main() {
             open_folder,
             select_folder,
             get_history_records,
-            save_history_record
+            save_history_record,
+            delete_history_record,
+            clear_history_records
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
