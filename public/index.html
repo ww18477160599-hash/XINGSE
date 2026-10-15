@@ -125,41 +125,15 @@
         </div>
       </div>
 
-      <!-- 选项库全局即时搜索与反差速选栏 -->
-            <!-- 全局写真企划工作台：灵感配方、反差碰撞与纯欲张力控制台 -->
-      <div class="glamour-presets-panel" id="glamour-presets-panel">
-        
-        <!-- 顶层工具栏：检索 + 张力档位旋钮 + 反差碰撞盲盒 -->
-        <div class="presets-toolbar-row">
-          <div class="options-search-input-wrap">
-            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="options-search-input" class="options-search-input" placeholder="🔍 快速检索 85 维选项库 (如: 雪山、比基尼、露脐、黑丝、85mm)..." autocomplete="off" spellcheck="false" />
-            <button class="options-search-clear" id="btn-options-search-clear" style="display:none;" title="清空搜索">✕</button>
-          </div>
-
-          <!-- 纯欲张力档位调节器 (Tension Dial) -->
-          <div class="tension-dial-group" id="tension-dial-group" title="调节视觉表现强度 (L1清新日常 ~ L4极限张力)，明确与整体风格搭配互补">
-            <span class="tension-dial-label">🔥 视觉强度:</span>
-            <div class="tension-pills">
-              <button type="button" class="tension-pill" data-level="1" title="Level 1: 清爽自然，生活感随性写真">L1 清新</button>
-              <button type="button" class="tension-pill" data-level="2" title="Level 2: 轻熟都市，强调名媛气质与高级剪裁">L2 轻熟</button>
-              <button type="button" class="tension-pill active" data-level="3" title="Level 3: 纯欲私房，微露微醺与松弛感">L3 纯欲</button>
-              <button type="button" class="tension-pill" data-level="4" title="Level 4: 极限张力，绝妙反差与饱满曼妙身段">L4 极张</button>
-            </div>
-          </div>
-
-          <!-- ⚡ 随机反差碰撞盲盒 (Spark Contrast Roll) -->
-          <button type="button" class="btn-contrast-roll" id="btn-contrast-roll" title="🎲 随机摇出两项视觉冲突极强的反差组合 (如：极寒雪山x比基尼、机车皮衣x蕾丝睡衣)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span>⚡ 反差碰撞</span>
-          </button>
+      <!-- 选项库即时检索栏 (轻量纯净单行) -->
+      <div class="options-search-bar-row" style="margin-bottom: 8px;">
+        <div class="options-search-input-wrap">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="options-search-input" class="options-search-input" placeholder="🔍 快速检索 85 维选项库 (如: 85mm、逆光、亚麻、方圆脸、锁骨、反差)..." autocomplete="off" spellcheck="false" />
+          <button class="options-search-clear" id="btn-options-search-clear" style="display:none;" title="清空搜索">✕</button>
         </div>
-
-        <!-- 实时搜索匹配结果列表 (搜索时展开) -->
-        <div class="options-search-results" id="options-search-results" style="display:none;"></div>
-
-
       </div>
+      <div class="options-search-results" id="options-search-results" style="display:none; margin-bottom: 12px;"></div>
 
       <!-- 动态卡片注入容器 -->
       <div class="console-cards-container" id="console-cards-container"></div>
