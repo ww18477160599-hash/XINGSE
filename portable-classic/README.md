@@ -53,6 +53,9 @@
 - **普通用户（推荐）**：下载 `形色 XINGSE_x.x.x_x64-setup.exe`，安装后即可在桌面直接启动。
 - **便携玩家**：下载绿色便携压缩包，解压后双击运行 `形色.exe` 即可。
 
+> 💡 **Windows 安装提示**：
+> 本项目为独立开源作品，未购买昂贵的大企业代码签名证书。Windows SmartScreen 可能会弹出蓝底提示「未知发布者」，点击 **【更多信息】➔【仍要运行】** 即可。源码 100% 开源透明、纯本地运行，请放心使用。
+
 ### 2. 配置 API Key
 首次打开软件，点击右上角 **「API 接口设置」** 填入你的专属凭证（只需填一次，保存在你本地）：
 * **LLM 提示词导演推荐**：
@@ -98,6 +101,13 @@ npm start
 # 4. 构建 Tauri 原生桌面端 (需安装 Rust 工具链)
 npm run tauri build
 ```
+
+---
+
+## 💬 交流与反馈 (Contact & Community)
+
+- ✈️ **作者 Telegram (蓝飞机)**：`8923656260` [![Telegram](https://img.shields.io/badge/Telegram-8923656260-2CA5E0?style=flat&logo=telegram&logoColor=white)](https://t.me/8923656260)
+- 欢迎交流摄影审美、提示词编排工程、模型接入或反馈 Bug 与改进建议！
 
 ---
 
