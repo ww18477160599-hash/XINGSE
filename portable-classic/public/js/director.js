@@ -4,22 +4,38 @@
 
 // 常用中英文摄影术语映射字典
 const EN_TERMS_MAP = {
-  // 创作
-  '生活写真': 'lifestyle candid photography',
-  '时尚编辑': 'high-fashion editorial, Vogue cover style',
-  '街头穿搭': 'street style fashion photoshoot, urban candid',
-  '度假旅拍': 'resort vacation portrait, cinematic travel photography',
-  '泳装写真': 'swimsuit lookbook photoshoot, summer beach aesthetic',
-  '内衣广告': 'intimate lingerie commercial, refined sensuality',
-  '运动写真': 'athletic sports portrait, dynamic fitness',
-  '棚拍肖像': 'studio portrait, profoto lighting, clean seamless backdrop',
-  '电影叙事': 'cinematic narrative frame, 35mm film still',
-  '清新自然': 'fresh and natural vibe, soft ethereal mood',
-  '温柔亲近': 'gentle intimate atmosphere, cozy aesthetic',
-  '成熟优雅': 'sophisticated elegance, regal presence',
-  '冷艳疏离': 'cool aloof demeanor, distant aristocratic elegance',
-  '慵懒妩媚': 'effortless sultry charm, languid sensuality',
-  '极致视觉冲击': 'striking visual impact, hyper-aesthetic tension',
+  // 创作基调与风格主题 (12大黄金摄影企划)
+  '日系清透写真': 'Japanese airy candid photography, soft natural illumination, delicate film grain, pastel gentle tones',
+  '韩系极简氛围': 'Korean editorial studio portraiture, clean dewy skin glow, sophisticated minimalism, refined tonal harmony',
+  '法式慵懒随性': 'French effortless chic portraiture, golden hour natural warmth, nonchalant elegance, soft cinematic contrast',
+  '港风复古胶片': '90s Hong Kong cinema vintage aesthetic, 35mm warm film grain, moody atmospheric chiaroscuro, nostalgic tones',
+  '欧美高定时装': 'Western haute couture editorial, sharp sculptural bone structure, stark elegant minimalism, Vogue cover lighting',
+  '新中式清冷雅韵': 'Neo-Chinese aesthetic portraiture, ethereal delicate bone structure, poetic negative space, subtle muted tones',
+  '纯欲私房漫度': 'Intimate boudoir portraiture, soft diffused window light, warm gentle breathing atmosphere, delicate sensuality',
+  '海边度假旅拍': 'Coastal resort summer vacation portrait, sun-drenched golden warmth, ocean breeze lookbook aesthetic',
+  '街头潮流抓拍': 'Urban street fashion candid snapshot, dynamic city background, spontaneous effortless cool stance',
+  '电影叙事大片': 'Cinematic 35mm film narrative still, widescreen composition, emotive dramatic lighting, rich storytelling depth',
+  '复古柯达胶片': 'Authentic analog film photography, Kodak Portra 400 silver halide grain, gentle chromatic halation',
+  '原生日常纪实': 'Raw unfiltered documentary portrait, authentic life snapshot, candid human warmth, natural spontaneity',
+
+  // 外搭大片款式与穿法体态
+  '廓形西装': 'oversized tailored blazer',
+  '经典风衣': 'classic trench coat',
+  '羊绒长大衣': 'luxurious cashmere long coat',
+  '慵懒针织开衫': 'slouchy knit cardigan',
+  '机车皮夹克': 'biker leather jacket',
+  '粗花呢小香风': 'tweed jacket',
+  '复古牛仔外套': 'vintage denim jacket',
+  '哑光麂皮夹克': 'matte suede jacket',
+  '羊羔毛外套': 'shearling jacket',
+  '透光轻薄衬衫': 'sheer layering shirt',
+  '羊绒披肩斗篷': 'cashmere cape shawl',
+  '敞开衣襟迎风': 'unbuttoned and flowing open in breeze, revealing inner layering',
+  '随意披在肩上': 'draped nonchalantly over shoulders in high-fashion editorial posture',
+  '腰带随性系结': 'casually belted at waist, cinched silhouette',
+  '单侧滑落露肩': 'slid off one shoulder, relaxed and effortlessly alluring',
+  '双手插兜微敞': 'hands tucked in pockets with coat slightly open',
+  '扣好立领修身': 'neatly buttoned with clean structured silhouette',
 
   // 构图与景别
   '全身': 'full body shot, head to toe',
@@ -62,12 +78,12 @@ const EN_TERMS_MAP = {
   '深度层次': 'deep depth of field layers, layered framing'
 };
 
-// 拼接中文摄影导演提示词（全85字段动态严密无遗漏注入）
+// 拼接中文摄影导演提示词（全维度动态严密无遗漏注入）
 function assembleChinesePrompt(selections, optionsMap) {
   const parts = [];
 
   // 1. 创作基调与人物身份 (Identity)
-  const theme = selections['theme'] || '时尚写真';
+  const theme = selections['theme'] || '日系清透写真';
   const tension = selections['tension'] || '成熟优雅';
   const framing = selections['framing'] || '七分身';
   const ar = selections['aspect_ratio'] || '16:10';
@@ -81,16 +97,22 @@ function assembleChinesePrompt(selections, optionsMap) {
   const nose = selections['nose'] || '微弧鼻梁';
   const lips = selections['lips'] || '饱满唇';
   const skinTone = selections['skin_tone'] || '暖白';
-  const skinChar = selections['skin_character'] || '自然均匀';
+  const skinChar = selections['skin_character'] || '自然原生';
 
   let faceFeatures = [];
   if (brows) faceFeatures.push(`${brows}`);
   if (eyes) faceFeatures.push(`清澈${eyes}`);
   if (nose) faceFeatures.push(`${nose}`);
   if (lips) faceFeatures.push(`${lips}`);
-  const faceDesc = faceFeatures.length > 0 ? `五官生动协调，眉眼间展现出${faceFeatures.join('、')}` : '';
+  
+  let faceDesc = '';
+  if (framing === '背身无脸') {
+    faceDesc = '镜头置于人物后方背向构图，五官自然隐匿于视角盲区，着重突出肩颈后侧发丝飘落弧度与优美肩背线条';
+  } else {
+    faceDesc = faceFeatures.length > 0 ? `五官生动协调，眉眼间展现出${faceFeatures.join('、')}` : '';
+  }
 
-  let identityDesc = `【画面风格与主角】这是一幅呈现「${theme}」的专业级女性摄影作品，画幅为「${ar}」，景别为「${framing}」，整体氛围流露着「${tension}」的审美张力。出镜女性约${age}，${ancestry}面貌特征，骨相呈${bone || '精致立体骨骼'}，脸部为协调的${faceShape}。${faceDesc}。肌肤呈现细腻温润的${skinTone}肤色与真实的${skinChar}光学质感，告别塑料磨皮假感，散发自然健康的原生微光。`;
+  let identityDesc = `【画面风格与主角】这是一幅呈现「${theme}」的专业级女性摄影作品，画幅为「${ar}」，景别为「${framing}」，整体氛围流露着「${tension}」的审美张力。出镜女性约${age}，${ancestry}面貌特征，骨相呈${bone || '精致立体骨骼'}，脸部为协调的${faceShape}。${faceDesc}。底层核心严格遵循真实人类原生皮肤光学特征：细腻原生微毛孔与次表面散射（subsurface scattering），真实的微观肌理起伏与${skinTone}健康透润血色，保留${skinChar}真实生理细节，彻底杜绝塑料磨皮假面或瓷娃娃感，散发自然鲜活的原生微光。`;
   parts.push(identityDesc);
 
   // 2. 身材形体解剖与比例 (Body - 全维度注入)
@@ -192,7 +214,17 @@ function assembleChinesePrompt(selections, optionsMap) {
   }
 
   let extraOutfit = [];
-  if (outerwear && outerwear !== '无外搭') extraOutfit.push(`外披${outerwear}`);
+  const outerWearStyle = selections['outerwear_wear'] || '';
+  const outerFabric = selections['outerwear_fabric'] || '';
+  const outerFit = selections['outerwear_fit'] || '';
+  const outerLen = selections['outerwear_length'] || '';
+  const outerColor = selections['outerwear_color'] || '';
+  if (outerwear && outerwear !== '无外搭') {
+    let outerTags = [outerColor, outerFabric, outerFit, outerLen, outerwear].filter(Boolean).join(' ');
+    let outerDesc = `外搭重点呈现一件设计感${outerTags}`;
+    if (outerWearStyle) outerDesc += `，以「${outerWearStyle}」的松弛姿态穿着，衣摆与轮廓在画面中占据大面积主导视觉`;
+    extraOutfit.push(outerDesc);
+  }
   if (socks && socks !== '无袜') extraOutfit.push(`配以${socks}`);
   if (footwear && footwear !== '赤足') extraOutfit.push(`脚踩${footwear}`);
   else if (footwear === '赤足') extraOutfit.push('赤足受力触地');
@@ -253,8 +285,14 @@ function assembleChinesePrompt(selections, optionsMap) {
   return parts.join('\n\n');
 }
 
-// 拼接英文 AI 生图提示词 (Diffusion / Flux - 85 字段精准英文翻译全注入)
+// 拼接英文 AI 生图提示词 (Diffusion / Flux - 85 字段精准英文翻译全注入，绝无中文夹杂)
 function assembleEnglishPrompt(selections) {
+  const toEnSafe = (typeof toEn === 'function') ? toEn : (val => {
+    if (typeof window !== 'undefined' && window.toEn) return window.toEn(val);
+    if (typeof XINGSE_EN_DICT !== 'undefined' && XINGSE_EN_DICT[val]) return XINGSE_EN_DICT[val];
+    return String(val || '');
+  });
+
   const tags = [
     'masterpiece',
     'award-winning professional photography',
@@ -265,112 +303,169 @@ function assembleEnglishPrompt(selections) {
     'natural film grain'
   ];
 
-  // 创作与景别
-  if (selections['theme']) tags.push(`${EN_TERMS_MAP[selections['theme']] || selections['theme'] + ' photoshoot'}`);
-  if (selections['framing']) tags.push(`${EN_TERMS_MAP[selections['framing']] || selections['framing']}`);
-
-  // 人物属性
-  if (selections['age']) tags.push(`${selections['age'].replace('岁', ' years old')}`);
-  if (selections['ancestry']) tags.push(`${selections['ancestry']} ethnic features`);
-  if (selections['face_shape']) tags.push(`${selections['face_shape']} face`);
-  if (selections['bone_structure']) tags.push(`${selections['bone_structure']}`);
-  if (selections['eyes']) tags.push(`${selections['eyes']} eyes`);
-  if (selections['brows']) tags.push(`${selections['brows']} eyebrows`);
-  if (selections['nose']) tags.push(`${selections['nose']} nose`);
-  if (selections['lips']) tags.push(`${selections['lips']} lips`);
-  if (selections['skin_tone']) tags.push(`${selections['skin_tone']} skin tone`);
-  if (selections['skin_character']) tags.push(`authentic skin texture, ${selections['skin_character']}, natural pores, no plastic blur`);
-
-  // 身材比例
-  if (selections['figure']) tags.push(`${selections['figure']} body shape`);
-  if (selections['height']) tags.push(`${selections['height']}`);
-  if (selections['bust_size'] || selections['cup']) {
-    tags.push(`${[selections['bust_size'], selections['cup'] ? selections['cup'] + ' cup' : '', selections['bust_shape']].filter(Boolean).join(' ')} breasts`);
+  // 1. 创作基调与风格主题
+  if (selections['theme']) {
+    const t = toEnSafe(selections['theme']);
+    if (t) tags.push(t);
   }
-  if (selections['waist']) tags.push(`${selections['waist']} waist`);
-  if (selections['waist_hip_ratio']) tags.push(`${selections['waist_hip_ratio']} waist-to-hip ratio`);
+  if (selections['tension']) {
+    const ten = toEnSafe(selections['tension']);
+    if (ten) tags.push(`${ten} aesthetic tension`);
+  }
+  if (selections['framing']) {
+    const f = toEnSafe(selections['framing']);
+    if (f) tags.push(f);
+  }
+
+  // 2. 人物身份属性与生理级真实微观皮肤质感
+  if (selections['age']) tags.push(toEnSafe(selections['age']));
+  if (selections['ancestry']) tags.push(`${toEnSafe(selections['ancestry'])} ethnic features`);
+  if (selections['framing'] === '背身无脸') {
+    tags.push('shot from behind, back view, faceless portrait, face turned away and hidden from camera, elegant silhouette of nape and shoulders');
+  } else {
+    if (selections['face_shape']) tags.push(toEnSafe(selections['face_shape']));
+    if (selections['bone_structure']) tags.push(toEnSafe(selections['bone_structure']));
+    if (selections['eyes']) tags.push(toEnSafe(selections['eyes']));
+    if (selections['brows']) tags.push(toEnSafe(selections['brows']));
+    if (selections['nose']) tags.push(toEnSafe(selections['nose']));
+    if (selections['lips']) tags.push(toEnSafe(selections['lips']));
+  }
+  if (selections['skin_tone']) tags.push(toEnSafe(selections['skin_tone']));
+  
+  // 核心微观皮肤光学表征：细腻原生毛孔、次表面散射、自然微瑕，坚决杜绝塑料磨皮
+  const skinChar = selections['skin_character'] ? toEnSafe(selections['skin_character']) : 'authentic skin physiology';
+  tags.push(`authentic human physiological skin texture, visible microscopic pores, delicate vellus peach fuzz in rim light, soft translucent subsurface scattering (SSS), natural skin translucency, ${skinChar}, zero plastic doll smoothing, zero airbrushed CGI artifacts, raw optical medium-format capture`);
+
+  // 3. 身材比例
+  if (selections['figure']) tags.push(toEnSafe(selections['figure']));
+  if (selections['height']) tags.push(toEnSafe(selections['height']));
+  if (selections['bust_size'] || selections['cup'] || selections['bust_shape']) {
+    const bParts = [toEnSafe(selections['bust_size']), toEnSafe(selections['cup']), toEnSafe(selections['bust_shape'])].filter(Boolean);
+    let bStr = bParts.join(' ');
+    if (!bStr.includes('breast') && !bStr.includes('bust')) bStr += ' bust';
+    tags.push(bStr);
+  }
+  if (selections['waist']) {
+    let wStr = toEnSafe(selections['waist']);
+    if (!wStr.includes('waist')) wStr += ' waist';
+    tags.push(wStr);
+  }
+  if (selections['waist_hip_ratio']) tags.push(toEnSafe(selections['waist_hip_ratio']));
   if (selections['hips_size'] || selections['hips_shape']) {
-    tags.push(`${[selections['hips_size'], selections['hips_shape']].filter(Boolean).join(' ')} hips`);
+    const hParts = [toEnSafe(selections['hips_size']), toEnSafe(selections['hips_shape'])].filter(Boolean);
+    let hStr = hParts.join(' ');
+    if (!hStr.includes('hip') && !hStr.includes('glute') && !hStr.includes('rear') && !hStr.includes('derriere')) hStr += ' hips';
+    tags.push(hStr);
   }
-  if (selections['legs']) tags.push(`${selections['legs']} legs`);
+  if (selections['shoulders']) tags.push(toEnSafe(selections['shoulders']));
+  if (selections['legs']) tags.push(toEnSafe(selections['legs']));
 
-  // 发妆
-  if (selections['hair_color'] || selections['hair']) {
-    tags.push(`${selections['hair_color'] || 'dark'} ${selections['hair_part'] ? selections['hair_part'] + ' ' : ''}${selections['hair'] || 'flowing hair'}`);
-  }
-  if (selections['makeup']) tags.push(`${selections['makeup']} makeup`);
+  // 4. 发妆与配饰
+  const hairParts = [toEnSafe(selections['hair_color']), toEnSafe(selections['hair_part']), toEnSafe(selections['hair'])].filter(Boolean);
+  if (hairParts.length > 0) tags.push(hairParts.join(', '));
+  if (selections['makeup']) tags.push(toEnSafe(selections['makeup']));
   if (selections['accessories'] && selections['accessories'] !== '无配饰') {
-    tags.push(`wearing ${selections['accessories']}`);
+    const acc = toEnSafe(selections['accessories']);
+    if (acc) tags.push(`accessorized with ${acc}`);
   }
 
-  // 服装搭配
+  // 5. 服装搭配
   const mode = selections['outfit_mode'] || '上下装';
   if (mode === '连衣裙' || mode === '连体装') {
     const op = [
-      selections['onepiece_color'],
-      selections['onepiece_fabric'],
-      selections['onepiece_fit'],
-      selections['onepiece_length'],
-      selections['onepiece_neckline'],
-      selections['onepiece_cutout'],
-      selections['onepiece_kind'] || 'dress'
-    ].filter(Boolean).join(' ');
+      toEnSafe(selections['onepiece_color']),
+      toEnSafe(selections['onepiece_fabric']),
+      toEnSafe(selections['onepiece_fit']),
+      toEnSafe(selections['onepiece_length']),
+      toEnSafe(selections['onepiece_neckline']),
+      toEnSafe(selections['onepiece_sleeve']),
+      toEnSafe(selections['onepiece_cutout']),
+      toEnSafe(selections['onepiece_kind'])
+    ].filter(Boolean).join(', ');
     if (op) tags.push(`wearing ${op}`);
   } else {
     const up = [
-      selections['upper_color'],
-      selections['upper_fabric'],
-      selections['upper_fit'],
-      selections['upper_neckline'],
-      selections['upper_cutout'],
-      selections['upper_kind'] || 'top'
-    ].filter(Boolean).join(' ');
+      toEnSafe(selections['upper_color']),
+      toEnSafe(selections['upper_fabric']),
+      toEnSafe(selections['upper_fit']),
+      toEnSafe(selections['upper_length']),
+      toEnSafe(selections['upper_neckline']),
+      toEnSafe(selections['upper_sleeve']),
+      toEnSafe(selections['upper_cutout']),
+      toEnSafe(selections['upper_kind'])
+    ].filter(Boolean).join(', ');
 
     const low = [
-      selections['lower_color'],
-      selections['lower_fabric'],
-      selections['lower_fit'],
-      selections['lower_waistline'],
-      selections['lower_cutout'],
-      selections['lower_kind'] || 'bottom'
-    ].filter(Boolean).join(' ');
+      toEnSafe(selections['lower_color']),
+      toEnSafe(selections['lower_fabric']),
+      toEnSafe(selections['lower_fit']),
+      toEnSafe(selections['lower_length']),
+      toEnSafe(selections['lower_waistline']),
+      toEnSafe(selections['lower_cutout']),
+      toEnSafe(selections['lower_kind'])
+    ].filter(Boolean).join(', ');
 
     if (up) tags.push(`wearing ${up}`);
     if (low) tags.push(`paired with ${low}`);
   }
 
-  if (selections['outerwear'] && selections['outerwear'] !== '无外搭') tags.push(`outerwear ${selections['outerwear']}`);
-  if (selections['socks'] && selections['socks'] !== '无袜') tags.push(`${selections['socks']}`);
-  if (selections['footwear'] && selections['footwear'] !== '赤足') tags.push(`${selections['footwear']}`);
-  else if (selections['footwear'] === '赤足') tags.push('barefoot');
+  // 外搭大片呈现
+  if (selections['outerwear'] && selections['outerwear'] !== '无外搭') {
+    const outerParts = [
+      toEnSafe(selections['outerwear_color']),
+      toEnSafe(selections['outerwear_fabric']),
+      toEnSafe(selections['outerwear_fit']),
+      toEnSafe(selections['outerwear_length']),
+      toEnSafe(selections['outerwear']),
+      toEnSafe(selections['outerwear_wear'])
+    ].filter(Boolean);
+    if (outerParts.length > 0) {
+      tags.push(`prominent outerwear layering: wearing ${outerParts.join(', ')}, dominating visual silhouette with tactile fabric drape`);
+    }
+  }
 
-  // 动作姿态与情绪
-  if (selections['posture']) tags.push(`${selections['posture']}`);
-  if (selections['body_direction']) tags.push(`${selections['body_direction']}`);
-  if (selections['support']) tags.push(`resting on ${selections['support']}`);
-  if (selections['hands']) tags.push(`hands ${selections['hands']}`);
-  if (selections['leg_action']) tags.push(`legs ${selections['leg_action']}`);
-  if (selections['head_direction']) tags.push(`head ${selections['head_direction']}`);
-  if (selections['gaze']) tags.push(`eyes looking ${selections['gaze']}`);
-  if (selections['emotion']) tags.push(`${selections['emotion']} facial expression`);
+  if (selections['socks'] && selections['socks'] !== '无袜') {
+    const s = toEnSafe(selections['socks']);
+    if (s) tags.push(s);
+  }
+  if (selections['footwear'] && selections['footwear'] !== '赤足') {
+    const fw = toEnSafe(selections['footwear']);
+    if (fw) tags.push(fw);
+  } else if (selections['footwear'] === '赤足') {
+    tags.push('barefoot');
+  }
 
-  // 环境光影
-  if (selections['location']) tags.push(`set in ${selections['location']}`);
-  if (selections['space_style']) tags.push(`${selections['space_style']} interior style`);
-  if (selections['time_weather']) tags.push(`${selections['time_weather']}`);
-  if (selections['environment_relation']) tags.push(`${selections['environment_relation']}`);
-  if (selections['props'] && selections['props'] !== '无道具') tags.push(`surrounding props: ${selections['props']}`);
-  if (selections['lighting']) tags.push(`${EN_TERMS_MAP[selections['lighting']] || selections['lighting'] + ' lighting'}`);
+  // 6. 动作姿态与情绪
+  if (selections['posture']) tags.push(toEnSafe(selections['posture']));
+  if (selections['body_direction']) tags.push(toEnSafe(selections['body_direction']));
+  if (selections['support']) tags.push(`support: ${toEnSafe(selections['support'])}`);
+  if (selections['hands']) tags.push(`hands: ${toEnSafe(selections['hands'])}`);
+  if (selections['leg_action']) tags.push(`legs: ${toEnSafe(selections['leg_action'])}`);
+  if (selections['head_direction']) tags.push(`head: ${toEnSafe(selections['head_direction'])}`);
+  if (selections['gaze']) tags.push(toEnSafe(selections['gaze']));
+  if (selections['emotion']) tags.push(toEnSafe(selections['emotion']));
 
-  // 镜头参数
-  if (selections['camera_height']) tags.push(`${selections['camera_height']} angle`);
-  if (selections['camera_angle']) tags.push(`${selections['camera_angle']}`);
-  if (selections['lens']) tags.push(`${selections['lens']} prime lens, f/1.4 aperture`);
-  if (selections['composition']) tags.push(`${EN_TERMS_MAP[selections['composition']] || selections['composition']}`);
-  if (selections['imaging']) tags.push(`${selections['imaging']} aesthetic`);
-  if (selections['notes']) tags.push(`${selections['notes']}`);
+  // 7. 环境场景与光影
+  if (selections['space_type']) tags.push(toEnSafe(selections['space_type']));
+  if (selections['location']) tags.push(`set in ${toEnSafe(selections['location'])}`);
+  if (selections['space_style']) tags.push(toEnSafe(selections['space_style']));
+  if (selections['time_weather']) tags.push(toEnSafe(selections['time_weather']));
+  if (selections['environment_relation']) tags.push(toEnSafe(selections['environment_relation']));
+  if (selections['props'] && selections['props'] !== '无道具') {
+    const pr = toEnSafe(selections['props']);
+    if (pr) tags.push(`surrounding props: ${pr}`);
+  }
+  if (selections['lighting']) tags.push(toEnSafe(selections['lighting']));
 
-  // 画幅比例控制与结尾增强
+  // 8. 镜头光学参数与胶片质感
+  if (selections['camera_height']) tags.push(toEnSafe(selections['camera_height']));
+  if (selections['camera_angle']) tags.push(toEnSafe(selections['camera_angle']));
+  if (selections['lens']) tags.push(`${selections['lens']} prime portrait lens, f/1.4 aperture`);
+  if (selections['composition']) tags.push(toEnSafe(selections['composition']));
+  if (selections['imaging']) tags.push(toEnSafe(selections['imaging']));
+  if (selections['notes']) tags.push(toEnSafe(selections['notes']));
+
+  // 9. 画幅与渲染引擎增强
   const ar = selections['aspect_ratio'];
   if (ar) {
     if (ar === '16:10' || ar === '16:9' || ar === '3:2' || ar === '4:3') {
@@ -384,7 +479,13 @@ function assembleEnglishPrompt(selections) {
 
   tags.push('8k resolution, highly detailed, photorealistic, natural creamy bokeh');
 
-  return tags.join(', ');
+  // 10. 终极绝对无中文字符防线：严格滤除任何中文字符与空项
+  const cleanTags = tags
+    .map(t => t.replace(/[\u4e00-\u9fa5\u3000-\u303f\uff01-\uffee]/g, '').trim())
+    .map(t => t.replace(/\s+/g, ' ').trim())
+    .filter(t => t.length > 0 && t !== 'wearing' && t !== 'paired with' && t !== 'support:' && t !== 'hands:' && t !== 'legs:' && t !== 'head:' && t !== 'surrounding props:');
+
+  return cleanTags.join(', ');
 }
 
 // 画幅与真实生图分辨率精准映射表
@@ -427,7 +528,143 @@ function extract7DSignature(selections) {
   };
 }
 
-// 库内随机采样（严格保留用户已锁定项，仅重抽生效分区的未锁定项，抽中结果绝不自动加锁）
+// 摄影美学与真实物理互斥规则引擎
+// 【核心设计哲学】：
+// 1. 严格防范真实物理力学与解剖结构矛盾（如：站立姿态不可受力于床面、背向构图不可直视镜头、赤足不可穿袜、纯夜晚不可午后强日光等）；
+// 2. 绝对不限制用户的前卫反差美学风格（如：雪山比基尼、清冷厌世脸配合夸张火辣身材、废墟穿高级礼服等属于摄影反差艺术与视觉张力，完全自由开放，绝不设限拦截）。
+function checkOptionConflict(fieldId, optionValue, currentSelections) {
+  if (!currentSelections || !optionValue) return null;
+
+  // 1. 赤足与穿袜互斥 (Footwear & Socks)
+  if (fieldId === 'socks') {
+    const fw = currentSelections['footwear'];
+    if (fw === '赤足' && optionValue !== '无袜') {
+      return { conflict: true, reason: '当前已选择「赤足」，无法穿袜' };
+    }
+  }
+  if (fieldId === 'footwear') {
+    const s = currentSelections['socks'];
+    if (optionValue === '赤足' && s && s !== '无袜') {
+      return { conflict: true, reason: `当前已选择「${s}」，无法赤足` };
+    }
+  }
+
+  // 2. 空间分类与场景地点互斥 (Space Type & Location)
+  const INDOOR_LOCATIONS = ['现代公寓', '极简现代公寓', '厨房', '书房', '卧室', '剧院后台', '走廊', '咖啡馆', '图书馆', '健身空间', '舞蹈空间', '酒店', '工业空间'];
+  const OUTDOOR_LOCATIONS = ['庭院', '露台', '城市街道', '车站', '停车场', '海岸', '泳池', '湖岸', '山路', '草原', '花园', '海滨沙滩', '林荫道', '公园草坪', '礁石海边', '天台', '斑马线', '公路边'];
+  const STUDIO_LOCATIONS = ['黑棚', '白棚', '彩色棚'];
+
+  if (fieldId === 'location') {
+    const st = currentSelections['space_type'];
+    if (st === '室内' && (OUTDOOR_LOCATIONS.includes(optionValue) || STUDIO_LOCATIONS.includes(optionValue))) {
+      return { conflict: true, reason: '当前已选择「室内」，与室外/纯影棚场景相悖' };
+    }
+    if (st === '室外' && (INDOOR_LOCATIONS.includes(optionValue) || STUDIO_LOCATIONS.includes(optionValue))) {
+      return { conflict: true, reason: '当前已选择「室外」，与室内/纯影棚场景相悖' };
+    }
+    if (st === '摄影棚' && (INDOOR_LOCATIONS.includes(optionValue) || OUTDOOR_LOCATIONS.includes(optionValue))) {
+      return { conflict: true, reason: '当前已选择「摄影棚」，与真实生活场景相悖' };
+    }
+  }
+  if (fieldId === 'space_type') {
+    const loc = currentSelections['location'];
+    if (optionValue === '室内' && OUTDOOR_LOCATIONS.includes(loc)) {
+      return { conflict: true, reason: `当前地点为「${loc}」，与室内相悖` };
+    }
+    if (optionValue === '室外' && INDOOR_LOCATIONS.includes(loc)) {
+      return { conflict: true, reason: `当前地点为「${loc}」，与室外相悖` };
+    }
+    if (optionValue === '摄影棚' && (INDOOR_LOCATIONS.includes(loc) || OUTDOOR_LOCATIONS.includes(loc))) {
+      return { conflict: true, reason: `当前地点为「${loc}」，与影棚相悖` };
+    }
+  }
+
+  // 3. 时间天气与光影照明互斥 (Time/Weather & Lighting)
+  const DAYLIGHT_LIGHTS = ['午后硬光', '午后阳光'];
+  const NIGHT_WEATHERS = ['夜晚'];
+  const OVERCAST_WEATHERS = ['暴雨', '阴天', '雪天'];
+  const DAYLIGHT_WEATHERS = ['清晨', '午后', '晴天'];
+
+  if (fieldId === 'lighting') {
+    const tw = currentSelections['time_weather'];
+    if (NIGHT_WEATHERS.includes(tw) && DAYLIGHT_LIGHTS.includes(optionValue)) {
+      return { conflict: true, reason: '当前天气为「夜晚」，与午后强日光相悖' };
+    }
+    if (OVERCAST_WEATHERS.includes(tw) && DAYLIGHT_LIGHTS.includes(optionValue)) {
+      return { conflict: true, reason: `当前天气为「${tw}」，与强日照硬光相悖` };
+    }
+    if (DAYLIGHT_WEATHERS.includes(tw) && optionValue === '夜景实用光') {
+      return { conflict: true, reason: `当前天气为「${tw}」，与夜景实用光相悖` };
+    }
+  }
+  if (fieldId === 'time_weather') {
+    const lt = currentSelections['lighting'];
+    if (NIGHT_WEATHERS.includes(optionValue) && DAYLIGHT_LIGHTS.includes(lt)) {
+      return { conflict: true, reason: `当前主光为「${lt}」，与夜晚环境相悖` };
+    }
+    if (OVERCAST_WEATHERS.includes(optionValue) && DAYLIGHT_LIGHTS.includes(lt)) {
+      return { conflict: true, reason: `当前主光为「${lt}」，与阴雨天气相悖` };
+    }
+    if (DAYLIGHT_WEATHERS.includes(optionValue) && lt === '夜景实用光') {
+      return { conflict: true, reason: '当前主光为「夜景实用光」，与日间/晴天相悖' };
+    }
+  }
+
+  // 4. 体态姿势与受力支点互斥 (Posture & Support)
+  const STANDING_POSTURES = ['自然站立', '单腿承重', '交叉腿站', '迈步', '回身', '旋转舞姿', '低姿态运动', '动态跳跃'];
+  const LYING_POSTURES = ['仰卧', '侧卧', '俯卧', '蜷缩侧卧', '躺椅半卧'];
+  const KNEELING_POSTURES = ['跪坐', '双膝跪姿', '单膝跪姿', '跪姿前倾'];
+  const SITTING_POSTURES = ['坐姿前倾', '反坐椅子', '侧坐', '端坐', '盘腿坐', '坐台沿'];
+
+  if (fieldId === 'support') {
+    const p = currentSelections['posture'];
+    if (STANDING_POSTURES.includes(p) && ['床面', '躺椅', '双膝与双掌'].includes(optionValue)) {
+      return { conflict: true, reason: `当前姿态为站立动作，与「${optionValue}」承托相悖` };
+    }
+    if (LYING_POSTURES.includes(p) && ['双脚', '单脚', '双手与双脚', '单手与双脚'].includes(optionValue)) {
+      return { conflict: true, reason: `当前姿态为卧姿，与「${optionValue}」立姿受力相悖` };
+    }
+    if (KNEELING_POSTURES.includes(p) && ['双脚', '单脚', '躺椅'].includes(optionValue)) {
+      return { conflict: true, reason: `当前姿态为跪姿，与「${optionValue}」受力相悖` };
+    }
+    if (SITTING_POSTURES.includes(p) && ['单脚', '双脚'].includes(optionValue)) {
+      return { conflict: true, reason: `当前为坐姿，与纯「${optionValue}」立姿受力相悖` };
+    }
+  }
+  if (fieldId === 'posture') {
+    const sp = currentSelections['support'];
+    if (STANDING_POSTURES.includes(optionValue) && ['床面', '躺椅', '双膝与双掌'].includes(sp)) {
+      return { conflict: true, reason: `当前支点为「${sp}」，与站立姿态相悖` };
+    }
+    if (LYING_POSTURES.includes(optionValue) && ['双脚', '单脚', '双手与双脚', '单手与双脚'].includes(sp)) {
+      return { conflict: true, reason: `当前支点为「${sp}」，与卧姿相悖` };
+    }
+    if (KNEELING_POSTURES.includes(optionValue) && ['双脚', '单脚', '躺椅'].includes(sp)) {
+      return { conflict: true, reason: `当前支点为「${sp}」，与跪姿相悖` };
+    }
+    if (SITTING_POSTURES.includes(optionValue) && ['单脚', '双脚'].includes(sp)) {
+      return { conflict: true, reason: `当前支点为「${sp}」，与坐姿相悖` };
+    }
+  }
+
+  // 5. 构图景别与视线互斥 (Framing & Gaze)
+  if (fieldId === 'gaze') {
+    const fr = currentSelections['framing'];
+    if (fr === '背身无脸' && ['直视镜头', '看镜头旁', '向下看', '侧向看'].includes(optionValue)) {
+      return { conflict: true, reason: '当前景别为「背身无脸」，正视/侧视镜头相悖' };
+    }
+  }
+  if (fieldId === 'framing') {
+    const gz = currentSelections['gaze'];
+    if (optionValue === '背身无脸' && ['直视镜头', '看镜头旁', '向下看', '侧向看'].includes(gz)) {
+      return { conflict: true, reason: `当前眼神已选「${gz}」，与背身无脸相悖` };
+    }
+  }
+
+  return null;
+}
+
+// 库内随机采样（严格保留用户已锁定项，仅重抽生效分区的未锁定项，抽中结果绝不自动加锁，且严格规避逻辑冲突）
 function sampleOptionsRandomly(fieldsList, currentSelections, lockedFields, isFieldActiveFn) {
   const newSelections = { ...currentSelections };
 
@@ -445,12 +682,16 @@ function sampleOptionsRandomly(fieldsList, currentSelections, lockedFields, isFi
     const allOptions = [...(field.options || []), ...(field.customOptions || [])];
     if (allOptions.length === 0) continue;
 
+    // 3. 严格过滤掉与已选/已锁项冲突的选项
+    const validOptions = allOptions.filter(opt => !checkOptionConflict(field.id, opt, newSelections));
+    const candidateOptions = validOptions.length > 0 ? validOptions : allOptions;
+
     if (field.type === 'single') {
-      const randomIndex = Math.floor(Math.random() * allOptions.length);
-      newSelections[field.id] = allOptions[randomIndex];
+      const randomIndex = Math.floor(Math.random() * candidateOptions.length);
+      newSelections[field.id] = candidateOptions[randomIndex];
     } else if (field.type === 'multi') {
-      const count = Math.min(allOptions.length, Math.floor(Math.random() * 2) + 1);
-      const shuffled = [...allOptions].sort(() => 0.5 - Math.random());
+      const count = Math.min(candidateOptions.length, Math.floor(Math.random() * 2) + 1);
+      const shuffled = [...candidateOptions].sort(() => 0.5 - Math.random());
       newSelections[field.id] = shuffled.slice(0, count).join('/');
     }
   }
@@ -482,6 +723,7 @@ window.XingSeDirector = {
   assembleEnglishPrompt,
   sampleOptionsRandomly,
   directorCoordinateMatch,
+  checkOptionConflict,
   ASPECT_RATIO_SIZE_MAP,
   getActualSubmitSize,
   getActualSubmitSizeInfo,

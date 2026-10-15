@@ -528,7 +528,10 @@ function extract7DSignature(selections) {
   };
 }
 
-// 摄影美学与物理常识冲突互斥规则引擎
+// 摄影美学与真实物理互斥规则引擎
+// 【核心设计哲学】：
+// 1. 严格防范真实物理力学与解剖结构矛盾（如：站立姿态不可受力于床面、背向构图不可直视镜头、赤足不可穿袜、纯夜晚不可午后强日光等）；
+// 2. 绝对不限制用户的前卫反差美学风格（如：雪山比基尼、清冷厌世脸配合夸张火辣身材、废墟穿高级礼服等属于摄影反差艺术与视觉张力，完全自由开放，绝不设限拦截）。
 function checkOptionConflict(fieldId, optionValue, currentSelections) {
   if (!currentSelections || !optionValue) return null;
 

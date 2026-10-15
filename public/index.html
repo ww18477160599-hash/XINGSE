@@ -182,7 +182,7 @@
             </div>
           </div>
 
-          <textarea id="main-prompt-box" class="main-prompt-textarea" placeholder="当前提示词为空。首次打开未锁定任何条件。
+          <textarea id="main-prompt-box" class="main-prompt-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="当前提示词为空。首次打开未锁定任何条件。
 
 • 点击左侧各维度选项或自建选项，将进入上方「锁定池」；
 • 点击下方「🎬 搭配」，AI导演将以生效锁定池为铁律补齐未锁定维度，生成完整提示词；
@@ -199,6 +199,7 @@
               <select id="quick-model-select" class="form-control form-control-sm" style="font-size:0.78rem; padding:4px 8px; width:auto; max-width:270px; background:var(--bg-tertiary); border-color:var(--border-subtle); color:var(--text-primary); cursor:pointer;">
                 <!-- 动态填充 -->
               </select>
+              <span id="quick-model-key-status" style="font-size:0.72rem; padding:2px 8px; border-radius:4px; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" title="点击前往配置 API Key"></span>
               <button class="btn btn-secondary btn-sm" id="btn-quick-config-api" title="打开 API 接口配置中心" style="padding:3px 8px; font-size:0.75rem; white-space:nowrap;">
                 ⚙️ 接口配置
               </button>
@@ -215,6 +216,11 @@
             <button class="btn btn-accent btn-action-generate" id="btn-generate-image" disabled title="提示词框有非空白文字时才可点击；直接提交上方框内当前文字给生图模型">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
               <span id="btn-generate-image-text">🚀 生图</span>
+            </button>
+
+            <button class="btn btn-secondary" id="btn-assemble-prompt-studio" title="立即根据左侧当前各项已选与锁定维度在本地快速组装并写入提示词框（零延迟，无需调用大模型接口）">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span>📝 本地组装</span>
             </button>
 
             <button class="btn btn-secondary" id="btn-ai-optimize-prompt" title="在现有框内方案上进行细节润色与质感提升，严格保留主角身份、锁定条件与核心设计">
@@ -267,6 +273,9 @@
             <div class="canvas-loading" id="canvas-loading" style="display:none;">
               <div class="spinner"></div>
               <div style="font-size:0.85rem; font-weight:600; color:var(--accent-gold-light);">AI 正在精细渲染图像...</div>
+              <button class="btn btn-secondary btn-sm" id="btn-cancel-generation-canvas" style="margin-top:10px; font-size:0.75rem; padding:4px 12px; border-color:rgba(239, 68, 68, 0.4); color:#fca5a5;">
+                ⏹ 中断取消生成
+              </button>
             </div>
           </div>
 

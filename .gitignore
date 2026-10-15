@@ -10,10 +10,12 @@ data/settings.json
 data/history.json
 portable-classic/data/settings.json
 portable-classic/data/history.json
+commercial_studio/data/settings.json
 
 # 本地生图产物（体积大且含个人生成历史）
 outputs/
 portable-classic/outputs/
+commercial_studio/outputs/
 D:\xingsepic\
 
 # Tauri / Rust 本地构建产物与开发临时文件

@@ -18,52 +18,57 @@
         </svg>
       </div>
       <div class="brand-title">形色 XINGSE</div>
-      <div class="brand-badge">V0.62.7 摄影导演级</div>
+      <div class="brand-badge" id="app-version-badge">Studio Pro v0.7.5</div>
     </div>
 
-    <!-- 快捷抽卡与控制操作 -->
-    <div class="header-actions">
-      <button class="btn btn-secondary" id="btn-toggle-console" title="收起或展开选项控制台，将主要空间让给提示词工作区">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-        <span id="btn-toggle-console-text">收起控制台</span>
-      </button>
+    <!-- 顶部状态摘要与主题切换栏 (取代旧版杂乱大按钮) -->
+    <div class="header-status-strip">
+      <div class="status-strip-item" id="header-lock-status" title="当前核心锁定参数数量">
+        <span class="status-strip-dot"></span>
+        <span class="status-strip-text" id="header-lock-text">已锁定 0 项核心</span>
+      </div>
+      <div class="status-strip-item" id="header-aspect-status" title="当前选择的画幅">
+        <span class="status-strip-icon">📐</span>
+        <span class="status-strip-text" id="header-aspect-text">16:10 · 1440×900</span>
+      </div>
+      <div class="status-strip-item" id="api-status-badge" title="当前生图与大模型 API 就绪状态">
+        <span class="status-dot"></span>
+        <span id="api-status-text">API 就绪</span>
+      </div>
+    </div>
 
-      <button class="btn btn-secondary" id="btn-random-sample" title="保留锁定项，从未锁定的选项库中随机采样（不自动加锁）">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="8" cy="8" r="1.5"/><circle cx="16" cy="16" r="1.5"/><circle cx="12" cy="12" r="1.5"/></svg>
-        <span>库内随机</span>
+    <!-- 主题配色切换器 (黑金 · 暖瓷 · 暖木) -->
+    <div class="theme-switcher-bar" title="切换工作台高级视觉主题">
+      <button class="theme-btn active" data-theme="obsidian" title="黑金/黑丝 (沉浸深黑 · 经典导演暗房)">
+        <span class="theme-dot" style="background:#0a0a0c; border:1px solid #d4af37;"></span>
+        <span>黑金</span>
       </button>
-
-      <button class="btn btn-primary" id="btn-director-match" title="以当前生效的锁定池为硬性条件，由AI摄影导演美学搭配协调其他未锁定维度">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <span>🎬 搭配</span>
+      <button class="theme-btn" data-theme="ceramic" title="暖瓷日落 (柔和燕麦暖白 · 舒适低对比)">
+        <span class="theme-dot" style="background:#f7f4ed; border:1px solid #c27803;"></span>
+        <span>暖瓷</span>
       </button>
-
-      <button class="btn btn-secondary" id="btn-unlock-all" title="解除全部锁定条件">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-        <span>全部解锁</span>
-      </button>
-
-      <button class="btn btn-secondary" id="btn-reset-all" title="清空全部选择与锁定">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
-        <span>重置控制台</span>
+      <button class="theme-btn" data-theme="crimson" title="暖木琥珀 (复古黑胡桃木 · 温暖胶片琥珀)">
+        <span class="theme-dot" style="background:#1d1612; border:1px solid #df8a3c;"></span>
+        <span>暖木</span>
       </button>
     </div>
 
     <!-- 右侧系统状态与 API 配置入口 -->
     <div class="header-status">
-      <div class="status-badge" id="header-summary-badge" title="已锁定的核心参数池">
-        <span class="status-dot"></span>
-        <span>锁定 0 项核心 · 其余AI搭配</span>
-      </div>
+      <button class="btn btn-secondary btn-sm" id="btn-toggle-console" title="收起或展开左侧与选项控制台，给画布最大空间">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        <span id="btn-toggle-console-text">收起控制台</span>
+      </button>
 
-      <div class="status-badge" id="api-status-badge" title="当前 API 就绪状态">
-        <span class="status-dot"></span>
-        <span>API 读取中...</span>
-      </div>
+      <button class="btn btn-secondary btn-sm gallery-entry-btn" id="btn-open-gallery-modal" title="全屏打开历史画廊与智能影集展厅">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        <span>🖼️ 作品展厅</span>
+        <span class="gallery-count-badge" id="header-gallery-count">0</span>
+      </button>
 
-      <button class="btn btn-secondary" id="btn-open-settings">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>API 接口设置</span>
+      <button class="btn btn-secondary btn-sm" id="btn-open-settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>API 设置</span>
       </button>
     </div>
   </header>
@@ -71,9 +76,9 @@
   <!-- 主架构三栏布局 -->
   <main class="app-container">
     
-    <!-- 左侧：11组类别快速导航 -->
+    <!-- 左侧：7组核心类别快速导航 -->
     <aside class="nav-sidebar">
-      <div class="sidebar-title">摄影维度导航 (11组)</div>
+      <div class="sidebar-title">摄影核心维度 (7大模块)</div>
       <div class="group-nav-list" id="sidebar-nav-list">
         <!-- JS 动态注入 -->
       </div>
@@ -95,9 +100,21 @@
             <span class="lock-pool-count-badge" id="lock-pool-count-badge">0 项已锁</span>
           </div>
           <div class="lock-pool-actions">
-            <span class="lock-pool-hint">自主选择或自建即入池 · 搭配与随机不自动入锁</span>
-            <button class="btn btn-secondary btn-sm" id="btn-lock-pool-unlock-all" title="解除当前全部锁定">
+            <button class="btn btn-secondary btn-sm" id="btn-random-sample" title="保留锁定项，从未锁定的选项库中随机采样（不自动加锁）">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="8" cy="8" r="1.5"/><circle cx="16" cy="16" r="1.5"/><circle cx="12" cy="12" r="1.5"/></svg>
+              <span>库内随机</span>
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-director-match" title="以当前生效的锁定池为硬性条件，由AI摄影导演美学搭配协调其他未锁定维度">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>🎬 搭配</span>
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-unlock-all" title="解除当前全部锁定条件">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
               <span>全部解锁</span>
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-reset-all" title="清空全部选择与锁定">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+              <span>重置</span>
             </button>
           </div>
         </div>
@@ -123,10 +140,6 @@
         <div class="ws-tab" data-tab="canvas">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           <span>生图画布</span>
-        </div>
-        <div class="ws-tab" data-tab="gallery">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-          <span>历史画廊</span>
         </div>
       </div>
 
@@ -159,15 +172,39 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               <span>摄影提示词方案 (生图唯一直读来源 · 可直接编辑审阅)</span>
             </span>
-            <span id="prompt-char-count" style="font-size:0.75rem; color:var(--text-muted);">0 字</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <!-- 输出语种切换选项 (原生构思撰写，非机翻) -->
+              <div class="prompt-lang-group" title="选择AI摄影导演提示词的输出语种（大模型原生构思撰写，非机翻）">
+                <button type="button" class="lang-pill active" id="lang-btn-zh" data-lang="zh" title="由AI摄影导演以原生中文专业摄影词汇撰写方案">中文</button>
+                <button type="button" class="lang-pill" id="lang-btn-en" data-lang="en" title="由AI摄影导演以原生英文专业摄影词汇撰写（专为 FLUX / Midjourney / SD 等原生英系模型定制）">English</button>
+              </div>
+              <span id="prompt-char-count" style="font-size:0.75rem; color:var(--text-muted);">0 字</span>
+            </div>
           </div>
 
-          <textarea id="main-prompt-box" class="main-prompt-textarea" placeholder="当前提示词为空。首次打开未锁定任何条件。
+          <textarea id="main-prompt-box" class="main-prompt-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="当前提示词为空。首次打开未锁定任何条件。
 
 • 点击左侧各维度选项或自建选项，将进入上方「锁定池」；
 • 点击下方「🎬 搭配」，AI导演将以生效锁定池为铁律补齐未锁定维度，生成完整提示词；
 • 您可在本框内直接自由编辑文字，生图提交将完全以此框当前文字为准；
 • 审核确认后，点击「🚀 生图」提交出图。"></textarea>
+
+          <!-- 生图模型快捷切换与就绪条 (无需每次进设置即可随心切换) -->
+          <div class="quick-model-bar" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding:6px 12px; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); font-size:0.8rem;">
+            <div style="display:flex; align-items:center; gap:6px; color:var(--text-secondary);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              <span style="font-weight:600; color:var(--accent-gold-light);">生图模型平台:</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <select id="quick-model-select" class="form-control form-control-sm" style="font-size:0.78rem; padding:4px 8px; width:auto; max-width:270px; background:var(--bg-tertiary); border-color:var(--border-subtle); color:var(--text-primary); cursor:pointer;">
+                <!-- 动态填充 -->
+              </select>
+              <span id="quick-model-key-status" style="font-size:0.72rem; padding:2px 8px; border-radius:4px; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" title="点击前往配置 API Key"></span>
+              <button class="btn btn-secondary btn-sm" id="btn-quick-config-api" title="打开 API 接口配置中心" style="padding:3px 8px; font-size:0.75rem; white-space:nowrap;">
+                ⚙️ 接口配置
+              </button>
+            </div>
+          </div>
 
           <!-- 提示词操作按钮群 (位于提示词框正下方) -->
           <div class="prompt-actions-toolbar">
@@ -179,6 +216,11 @@
             <button class="btn btn-accent btn-action-generate" id="btn-generate-image" disabled title="提示词框有非空白文字时才可点击；直接提交上方框内当前文字给生图模型">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
               <span id="btn-generate-image-text">🚀 生图</span>
+            </button>
+
+            <button class="btn btn-secondary" id="btn-assemble-prompt-studio" title="立即根据左侧当前各项已选与锁定维度在本地快速组装并写入提示词框（零延迟，无需调用大模型接口）">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span>📝 本地组装</span>
             </button>
 
             <button class="btn btn-secondary" id="btn-ai-optimize-prompt" title="在现有框内方案上进行细节润色与质感提升，严格保留主角身份、锁定条件与核心设计">
@@ -217,6 +259,9 @@
           </div>
           
           <div class="image-canvas-wrapper" id="image-canvas-wrapper">
+            <div class="canvas-ambient-backdrop" id="canvas-ambient-backdrop"></div>
+            <div class="canvas-aspect-badge" id="canvas-aspect-badge" style="display:none;"></div>
+
             <div class="canvas-empty" id="canvas-empty">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               <span>点击「开始生图」后在此实时预览</span>
@@ -228,6 +273,9 @@
             <div class="canvas-loading" id="canvas-loading" style="display:none;">
               <div class="spinner"></div>
               <div style="font-size:0.85rem; font-weight:600; color:var(--accent-gold-light);">AI 正在精细渲染图像...</div>
+              <button class="btn btn-secondary btn-sm" id="btn-cancel-generation-canvas" style="margin-top:10px; font-size:0.75rem; padding:4px 12px; border-color:rgba(239, 68, 68, 0.4); color:#fca5a5;">
+                ⏹ 中断取消生成
+              </button>
             </div>
           </div>
 
@@ -248,18 +296,21 @@
               </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Tab 3: 历史画廊面板 -->
-      <div class="ws-content" id="panel-gallery" style="display:none;">
-        <div class="panel-block">
-          <div class="panel-block-title">
-            <span>历史生成作品</span>
-            <span style="font-size:0.75rem; color:var(--text-muted);">点击卡片可复原参数，点击放大预览</span>
-          </div>
-          <div class="gallery-grid" id="gallery-grid">
-            <!-- JS 动态注入 -->
+          <!-- 底片胶卷轴与快速微调栏 (Filmstrip Ribbon) -->
+          <div class="filmstrip-section" id="filmstrip-section">
+            <div class="filmstrip-header">
+              <span class="filmstrip-title">🎞️ 最近底片胶卷 (点击快速对比与复原)</span>
+              <span class="filmstrip-hint" id="filmstrip-count">0 张底片</span>
+            </div>
+            <div class="filmstrip-scroll" id="filmstrip-scroll">
+              <div style="font-size:0.75rem; color:var(--text-muted); padding:6px 0;">出图后将在此生成胶卷序列...</div>
+            </div>
+            <div class="quick-iteration-bar" id="quick-iteration-bar" style="display:none;">
+              <span class="quick-iter-label">当前底片快捷微调：</span>
+              <button class="btn btn-secondary btn-sm" id="btn-quick-rematch">🎬 重新搭配未锁项</button>
+              <button class="btn btn-accent btn-sm" id="btn-quick-regenerate">⚡ 原参数再出一张</button>
+            </div>
           </div>
         </div>
       </div>
@@ -270,9 +321,9 @@
 
   <!-- 模态框 1: API 接口配置中心 -->
   <div class="modal-overlay" id="settings-modal">
-    <div class="modal-container">
+    <div class="modal-container" style="max-width:580px;">
       <div class="modal-header">
-        <h3 class="modal-title">系统与 API 接口配置</h3>
+        <h3 class="modal-title">系统与各大平台 API 配置中心</h3>
         <button class="btn btn-icon-only" id="btn-close-settings">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -287,12 +338,17 @@
           </div>
 
           <div class="form-group" style="margin-bottom:10px;">
-            <label class="form-label">供应商预设快速切换</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <label class="form-label" style="margin:0;">选择大模型供应商平台</label>
+              <span style="font-size:0.72rem; color:var(--accent-gold);">各平台 Key 独立记忆保存</span>
+            </div>
             <select class="form-control" id="llm-provider">
+              <option value="dashscope">阿里云百炼 (通义千问 Qwen - 官方推荐)</option>
               <option value="deepseek">DeepSeek (深度求索 - 推荐)</option>
-              <option value="openai">OpenAI (GPT-4o)</option>
-              <option value="kimi">Kimi (月之暗面)</option>
               <option value="siliconflow">硅基流动 (SiliconFlow DeepSeek-V3)</option>
+              <option value="openai">OpenAI (GPT-4o 官方)</option>
+              <option value="kimi">Kimi (月之暗面)</option>
+              <option value="zhipu">智谱 AI (GLM-4-Flash)</option>
               <option value="ollama">Ollama 本地大模型</option>
               <option value="custom">自定义兼容接口</option>
             </select>
@@ -300,7 +356,7 @@
 
           <div class="form-group" style="margin-bottom:10px;">
             <label class="form-label">Base URL (API 基础路径)</label>
-            <input type="text" class="form-control" id="llm-base-url" placeholder="https://api.deepseek.com" />
+            <input type="text" class="form-control" id="llm-base-url" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" />
           </div>
 
           <div class="form-group" style="margin-bottom:10px;">
@@ -311,7 +367,12 @@
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
             <div class="form-group">
               <label class="form-label">模型名称 (Model)</label>
-              <input type="text" class="form-control" id="llm-model" placeholder="deepseek-chat" />
+              <div style="display:flex; gap:6px;">
+                <input type="text" class="form-control" id="llm-model" placeholder="qwen-plus" style="flex:1;" />
+                <select id="llm-model-select" class="form-control" style="width:auto; max-width:130px; font-size:0.76rem;" title="从该供应商推荐模型中快速选取">
+                  <!-- 动态填充 -->
+                </select>
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label">创意温度 (Temperature)</label>
@@ -332,22 +393,26 @@
         <div style="border-bottom:1px solid var(--border-subtle); padding:16px 0;">
           <div style="font-size:0.95rem; font-weight:700; color:var(--accent-gold-light); margin-bottom:12px; display:flex; align-items:center; gap:6px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <span>图片生成模型 (Image Generation API)</span>
+            <span>图片生成模型平台 (生图 API 中心)</span>
           </div>
 
           <div class="form-group" style="margin-bottom:10px;">
-            <label class="form-label">供应商预设快速切换</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <label class="form-label" style="margin:0;">选择生图供应商平台</label>
+              <span style="font-size:0.72rem; color:var(--accent-gold);">自动保存各平台专属 Key</span>
+            </div>
             <select class="form-control" id="image-provider">
-              <option value="custom">通用兼容生图接口 (中转站 / gpt-image)</option>
-              <option value="siliconflow">硅基流动 SiliconFlow (FLUX.1-schnell 极速生图)</option>
-              <option value="siliconflow_dev">硅基流动 SiliconFlow (FLUX.1-dev 顶级画质)</option>
-              <option value="openai">OpenAI (DALL-E 3)</option>
+              <option value="dashscope">阿里云百炼 (通义万相 Wanx 2.1 / 千问生图 - 官方支持)</option>
+              <option value="siliconflow">硅基流动 SiliconFlow (FLUX.1-schnell / FLUX.1-dev / SD3.5)</option>
+              <option value="zhipu">智谱 AI (CogView-3-Plus / CogView-3-Flash)</option>
+              <option value="openai">OpenAI (DALL-E 3 官方)</option>
+              <option value="custom">哈基米 / GemAI (gpt-image / Midjourney - 中转代理)</option>
             </select>
           </div>
 
           <div class="form-group" style="margin-bottom:10px;">
             <label class="form-label">Base URL (API 基础路径)</label>
-            <input type="text" class="form-control" id="image-base-url" placeholder="https://api.gemai.cc/v1" />
+            <input type="text" class="form-control" id="image-base-url" placeholder="https://dashscope.aliyuncs.com/api/v1" />
           </div>
 
           <div class="form-group" style="margin-bottom:10px;">
@@ -357,18 +422,23 @@
 
           <div class="form-group" style="margin-bottom:10px;">
             <label class="form-label">模型名称 (Model)</label>
-            <input type="text" class="form-control" id="image-model" placeholder="gpt-image-2.5-low" />
+            <div style="display:flex; gap:6px;">
+              <input type="text" class="form-control" id="image-model" placeholder="wanx2.1-t2i-turbo" style="flex:1;" />
+              <select id="image-model-select" class="form-control" style="width:auto; max-width:170px; font-size:0.76rem;" title="从当前平台的推荐模型列表中快速选取">
+                <!-- 动态填充 -->
+              </select>
+            </div>
           </div>
 
           <div style="margin-bottom:10px; font-size:0.75rem; color:var(--text-muted); background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
-            ℹ 画幅尺寸已根据控制台「创作 → 画幅」自动换算（如 9:16、16:10、16:9、3:4、1:1 等），无需在此手动填写。
+            ℹ 画幅尺寸已根据控制台「创作 → 画幅」自动换算（如 9:16、16:9、3:4、1:1 等，阿里云百炼万相自动适配为星号规格如 720*1280），无需手动填写。
           </div>
 
           <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px; font-size:0.78rem; background:rgba(0,0,0,0.25); padding:8px 12px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
             <span style="font-weight:600; color:var(--text-secondary);">连通性测试模式：</span>
             <div style="display:flex; gap:16px;">
               <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:var(--accent-gold-light);">
-                <input type="radio" name="image-test-mode" value="zero_cost" checked> 零费用握手测试 (优先查询 /models，不产生计费)
+                <input type="radio" name="image-test-mode" value="zero_cost" checked> 零费用握手测试 (验证 Key 有效性，不产生计费)
               </label>
               <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:var(--text-secondary);" title="真实发送1024x1024生图请求，可能产生费用">
                 <input type="radio" name="image-test-mode" value="real_generate"> 真实出图测试 (⚠️ 会实际计费)
@@ -442,6 +512,65 @@
     </div>
   </div>
 
+  <!-- 全屏沉浸式历史画廊与智能影集展厅 (Exhibition Overlay) -->
+  <div class="gallery-exhibition-overlay" id="gallery-exhibition-overlay" style="display:none;">
+    <!-- 展厅顶栏 -->
+    <header class="exhibition-header">
+      <div class="exhibition-title-area">
+        <div class="exhibition-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        </div>
+        <div>
+          <h2 class="exhibition-title">形色摄影展厅 · 历史影集</h2>
+          <span class="exhibition-subtitle" id="exhibition-count-subtitle">共 0 张作品</span>
+        </div>
+      </div>
+
+      <!-- 中间操作工具条：搜索 + 排序 -->
+      <div class="exhibition-toolbar">
+        <div class="exhibition-search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="gallery-search-input" class="exhibition-search-input" placeholder="检索作品标题、风格、服装或提示词..." />
+          <button class="search-clear-btn" id="btn-gallery-search-clear" style="display:none;" title="清除搜索">✕</button>
+        </div>
+        <div class="exhibition-sort-wrap">
+          <span class="sort-icon">⇅</span>
+          <select id="gallery-sort-select" class="exhibition-select" title="选择作品排序方式">
+            <option value="time-desc">🕒 生成时间 (最新优先 · 默认)</option>
+            <option value="time-asc">🕒 生成时间 (最早优先)</option>
+            <option value="title-asc">🔤 作品名称 (A–Z)</option>
+            <option value="ar">📐 画幅规格</option>
+            <option value="theme">🎨 摄影企划风格</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 右侧控制：清空 + 关闭 -->
+      <div class="exhibition-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-clear-gallery" title="清空全部历史生图记录">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          <span>清空画廊</span>
+        </button>
+        <button class="btn btn-primary btn-sm btn-close-exhibition" id="btn-close-gallery-exhibition" title="返回创作控制台 (ESC)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span>返回创作 (ESC)</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 智能影集与自动分类导航条 (横向滑动标签胶囊) -->
+    <div class="exhibition-albums-bar" id="exhibition-albums-bar">
+      <!-- JS 动态注入影集胶囊标签 -->
+    </div>
+
+    <!-- 展厅作品瀑布流网格主体 -->
+    <div class="exhibition-content-scroll" id="exhibition-content-scroll">
+      <div class="gallery-grid" id="gallery-grid">
+        <!-- JS 动态注入高质感作品卡片 -->
+      </div>
+    </div>
+  </div>
+
   <!-- 全屏大图预览灯箱 (Lightbox) -->
   <div class="lightbox-overlay" id="image-lightbox" style="display:none;">
     <div class="lightbox-header">
@@ -481,6 +610,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- 核心逻辑脚本 -->
+  <script src="js/data_defaults.js"></script>
+  <script src="js/translations.js"></script>
   <script src="js/director.js"></script>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>

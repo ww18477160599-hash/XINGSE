@@ -1,5 +1,5 @@
 {
-  "version": "0.62.7",
+  "version": "0.70.0",
   "groups": [
     {
       "id": "overview",
@@ -7,25 +7,25 @@
       "fields": [
         {
           "id": "theme",
-          "name": "主题",
+          "name": "风格主题",
           "groupId": "overview",
           "groupName": "创作",
           "type": "single",
-          "note": "",
+          "note": "确立整组摄影的拍摄企划、地域美学与影调灵魂，决定画面的整体视觉方向。",
           "activeWhen": null,
           "options": [
-            "生活写真",
-            "时尚编辑",
-            "街头穿搭",
-            "度假旅拍",
-            "泳装写真",
-            "内衣广告",
-            "运动写真",
-            "棚拍肖像",
-            "电影叙事",
-            "舞台造型",
-            "超现实写真",
-            "个人壁纸"
+            "日系清透写真",
+            "韩系极简氛围",
+            "法式慵懒随性",
+            "港风复古胶片",
+            "欧美高定时装",
+            "新中式清冷雅韵",
+            "纯欲私房漫度",
+            "海边度假旅拍",
+            "街头潮流抓拍",
+            "电影叙事大片",
+            "复古柯达胶片",
+            "原生日常纪实"
           ],
           "customOptions": []
         },
@@ -104,51 +104,15 @@
           "groupId": "identity",
           "groupName": "人物",
           "type": "single",
-          "note": "每档两个整岁；自定义必须明确成年，不能采用含未成年人的区间。",
+          "note": "精选黄金成年人像摄影年龄段（18~40岁），合规安全。若有特殊具体岁数需求，可通过自建选项添加。",
           "activeWhen": null,
           "minimum": 18,
           "options": [
-            "18–19岁",
-            "20–21岁",
-            "22–23岁",
-            "24–25岁",
-            "26–27岁",
-            "28–29岁",
-            "30–31岁",
-            "32–33岁",
-            "34–35岁",
-            "36–37岁",
-            "38–39岁",
-            "40–41岁",
-            "42–43岁",
-            "44–45岁",
-            "46–47岁",
-            "48–49岁",
-            "50–51岁",
-            "52–53岁",
-            "54–55岁",
-            "56–57岁",
-            "58–59岁",
-            "60–61岁",
-            "62–63岁",
-            "64–65岁",
-            "66–67岁",
-            "68–69岁",
-            "70–71岁",
-            "72–73岁",
-            "74–75岁",
-            "76–77岁",
-            "78–79岁",
-            "80–81岁",
-            "82–83岁",
-            "84–85岁",
-            "86–87岁",
-            "88–89岁",
-            "90–91岁",
-            "92–93岁",
-            "94–95岁",
-            "96–97岁",
-            "98–99岁"
+            "18–20岁",
+            "21–25岁",
+            "26–30岁",
+            "31–35岁",
+            "36–40岁"
           ],
           "customOptions": []
         },
@@ -344,17 +308,145 @@
           "groupId": "identity",
           "groupName": "人物",
           "type": "single",
-          "note": "始终保留皮肤光学与部位差异，不用整脸均匀毛孔覆盖。",
+          "note": "强调真实人类生理微观皮肤光学，保留次表面散射、自然毛孔与原生微瑕，杜绝塑料磨皮假感。",
           "activeWhen": null,
           "options": [
-            "自然均匀",
-            "雀斑",
-            "少量晒斑",
+            "原生微毛孔",
+            "水光微汗",
+            "自然微透",
+            "微泛红",
             "轻微晒痕",
-            "局部泛红",
             "自然痣点",
+            "雀斑",
+            "自然均匀",
             "轻微年龄纹理",
+            "少量晒斑",
+            "局部泛红",
             "健康微汗"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "hair",
+          "name": "发型",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "利落短发",
+            "精灵短发",
+            "短鲍勃",
+            "齐肩直发",
+            "齐肩波浪",
+            "中长直发",
+            "中长卷发",
+            "长直发",
+            "长波浪",
+            "自然卷",
+            "高马尾",
+            "低马尾",
+            "高丸子",
+            "低盘发",
+            "双辫",
+            "单辫",
+            "半扎发",
+            "湿发后梳"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "hair_part",
+          "name": "分缝",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "中分",
+            "偏分",
+            "深侧分",
+            "后梳",
+            "齐刘海",
+            "空气刘海",
+            "侧刘海",
+            "无刘海"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "hair_color",
+          "name": "发色",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "自然黑",
+            "软黑",
+            "深棕",
+            "栗棕",
+            "巧克力",
+            "浅棕",
+            "蜂蜜棕",
+            "深金",
+            "浅金",
+            "亚麻金",
+            "铜红",
+            "酒红",
+            "银灰",
+            "铂金",
+            "粉色",
+            "蓝色",
+            "紫色",
+            "挑染"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "makeup",
+          "name": "妆容",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "自然淡妆",
+            "清透裸妆",
+            "暖调妆",
+            "冷调妆",
+            "复古红唇",
+            "烟熏眼妆",
+            "柔雾妆",
+            "运动淡妆",
+            "湿润光泽",
+            "创意彩妆"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "accessories",
+          "name": "配饰",
+          "groupId": "identity",
+          "groupName": "人物",
+          "type": "multi",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "无配饰",
+            "细项链",
+            "耳钉",
+            "耳环",
+            "手镯",
+            "戒指",
+            "腰带",
+            "墨镜",
+            "发饰",
+            "围巾"
           ],
           "customOptions": []
         }
@@ -608,136 +700,6 @@
       ]
     },
     {
-      "id": "styling",
-      "name": "发妆",
-      "fields": [
-        {
-          "id": "hair",
-          "name": "发型",
-          "groupId": "styling",
-          "groupName": "发妆",
-          "type": "single",
-          "note": "",
-          "activeWhen": null,
-          "options": [
-            "利落短发",
-            "精灵短发",
-            "短鲍勃",
-            "齐肩直发",
-            "齐肩波浪",
-            "中长直发",
-            "中长卷发",
-            "长直发",
-            "长波浪",
-            "自然卷",
-            "高马尾",
-            "低马尾",
-            "高丸子",
-            "低盘发",
-            "双辫",
-            "单辫",
-            "半扎发",
-            "湿发后梳"
-          ],
-          "customOptions": []
-        },
-        {
-          "id": "hair_part",
-          "name": "分缝",
-          "groupId": "styling",
-          "groupName": "发妆",
-          "type": "single",
-          "note": "",
-          "activeWhen": null,
-          "options": [
-            "中分",
-            "偏分",
-            "深侧分",
-            "后梳",
-            "齐刘海",
-            "空气刘海",
-            "侧刘海",
-            "无刘海"
-          ],
-          "customOptions": []
-        },
-        {
-          "id": "hair_color",
-          "name": "发色",
-          "groupId": "styling",
-          "groupName": "发妆",
-          "type": "single",
-          "note": "",
-          "activeWhen": null,
-          "options": [
-            "自然黑",
-            "软黑",
-            "深棕",
-            "栗棕",
-            "巧克力",
-            "浅棕",
-            "蜂蜜棕",
-            "深金",
-            "浅金",
-            "亚麻金",
-            "铜红",
-            "酒红",
-            "银灰",
-            "铂金",
-            "粉色",
-            "蓝色",
-            "紫色",
-            "挑染"
-          ],
-          "customOptions": []
-        },
-        {
-          "id": "makeup",
-          "name": "妆容",
-          "groupId": "styling",
-          "groupName": "发妆",
-          "type": "single",
-          "note": "",
-          "activeWhen": null,
-          "options": [
-            "自然淡妆",
-            "清透裸妆",
-            "暖调妆",
-            "冷调妆",
-            "复古红唇",
-            "烟熏眼妆",
-            "柔雾妆",
-            "运动淡妆",
-            "湿润光泽",
-            "创意彩妆"
-          ],
-          "customOptions": []
-        },
-        {
-          "id": "accessories",
-          "name": "配饰",
-          "groupId": "styling",
-          "groupName": "发妆",
-          "type": "multi",
-          "note": "",
-          "activeWhen": null,
-          "options": [
-            "无配饰",
-            "细项链",
-            "耳钉",
-            "耳环",
-            "手镯",
-            "戒指",
-            "腰带",
-            "墨镜",
-            "发饰",
-            "围巾"
-          ],
-          "customOptions": []
-        }
-      ]
-    },
-    {
       "id": "outfit",
       "name": "服装",
       "fields": [
@@ -758,77 +720,10 @@
           "customOptions": []
         },
         {
-          "id": "footwear",
-          "name": "鞋履",
-          "groupId": "outfit",
-          "groupName": "服装",
-          "type": "single",
-          "note": "白袜不等于赤足，场景需鞋时明确设计。",
-          "activeWhen": null,
-          "options": [
-            "运动鞋",
-            "帆布鞋",
-            "乐福鞋",
-            "平底鞋",
-            "凉鞋",
-            "高跟鞋",
-            "短靴",
-            "长靴",
-            "拖鞋",
-            "赤足"
-          ],
-          "customOptions": []
-        },
-        {
-          "id": "socks",
-          "name": "袜类",
-          "groupId": "outfit",
-          "groupName": "服装",
-          "type": "single",
-          "note": "",
-          "activeWhen": null,
-          "options": [
-            "无袜",
-            "短袜",
-            "中筒袜",
-            "长袜",
-            "连裤袜",
-            "薄丝袜",
-            "运动袜"
-          ],
-          "customOptions": []
-        },
-        {
-          "id": "outerwear",
-          "name": "外搭",
-          "groupId": "outfit",
-          "groupName": "服装",
-          "type": "single",
-          "note": "",
-          "activeWhen": null,
-          "options": [
-            "无外搭",
-            "衬衫",
-            "西装",
-            "夹克",
-            "风衣",
-            "开衫",
-            "披肩",
-            "运动外套"
-          ],
-          "customOptions": []
-        }
-      ]
-    },
-    {
-      "id": "upper",
-      "name": "上装",
-      "fields": [
-        {
           "id": "upper_kind",
           "name": "品类",
-          "groupId": "upper",
-          "groupName": "上装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -858,8 +753,8 @@
         {
           "id": "upper_fabric",
           "name": "面料",
-          "groupId": "upper",
-          "groupName": "上装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -900,8 +795,8 @@
         {
           "id": "upper_fit",
           "name": "贴合",
-          "groupId": "upper",
-          "groupName": "上装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -923,8 +818,8 @@
         {
           "id": "upper_length",
           "name": "长度",
-          "groupId": "upper",
-          "groupName": "上装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -945,8 +840,8 @@
         {
           "id": "upper_neckline",
           "name": "领口",
-          "groupId": "upper",
-          "groupName": "上装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -974,8 +869,8 @@
         {
           "id": "upper_sleeve",
           "name": "袖型",
-          "groupId": "upper",
-          "groupName": "上装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1000,8 +895,8 @@
         {
           "id": "upper_cutout",
           "name": "镂空",
-          "groupId": "upper",
-          "groupName": "上装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1026,61 +921,10 @@
           "customOptions": []
         },
         {
-          "id": "upper_structure",
-          "name": "结构",
-          "groupId": "upper",
-          "groupName": "上装",
-          "type": "single",
-          "note": "",
-          "activeWhen": {
-            "outfit_mode": [
-              "上下装",
-              "成套装"
-            ]
-          },
-          "options": [
-            "简洁裁片",
-            "不对称裁片",
-            "交叉织带",
-            "细绳系结",
-            "褶皱抽绳",
-            "多层叠搭",
-            "胸挡结构",
-            "肩带承重",
-            "扣具连接",
-            "异材拼接",
-            "网纱拼接",
-            "缎面蕾丝拼接"
-          ],
-          "customOptions": []
-        },
-        {
-          "id": "upper_lining",
-          "name": "内衬",
-          "groupId": "upper",
-          "groupName": "上装",
-          "type": "single",
-          "note": "不得把透视外层直接等同于私密部位透出；按品类设计遮挡。",
-          "activeWhen": {
-            "outfit_mode": [
-              "上下装",
-              "成套装"
-            ]
-          },
-          "options": [
-            "不透明面料",
-            "完整不透明内衬",
-            "重点区域不透明内衬",
-            "双层面料",
-            "局部透明外层"
-          ],
-          "customOptions": []
-        },
-        {
           "id": "upper_color",
           "name": "颜色",
-          "groupId": "upper",
-          "groupName": "上装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1113,18 +957,12 @@
             "花纹"
           ],
           "customOptions": []
-        }
-      ]
-    },
-    {
-      "id": "lower",
-      "name": "下装",
-      "fields": [
+        },
         {
           "id": "lower_kind",
           "name": "品类",
-          "groupId": "lower",
-          "groupName": "下装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1153,8 +991,8 @@
         {
           "id": "lower_fabric",
           "name": "面料",
-          "groupId": "lower",
-          "groupName": "下装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1195,8 +1033,8 @@
         {
           "id": "lower_fit",
           "name": "贴合",
-          "groupId": "lower",
-          "groupName": "下装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1218,8 +1056,8 @@
         {
           "id": "lower_length",
           "name": "长度",
-          "groupId": "lower",
-          "groupName": "下装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1243,8 +1081,8 @@
         {
           "id": "lower_waistline",
           "name": "腰位",
-          "groupId": "lower",
-          "groupName": "下装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "低腰也保持所需遮挡，随动作与布料位移检验。",
           "activeWhen": {
@@ -1264,8 +1102,8 @@
         {
           "id": "lower_cutout",
           "name": "镂空",
-          "groupId": "lower",
-          "groupName": "下装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1290,61 +1128,10 @@
           "customOptions": []
         },
         {
-          "id": "lower_structure",
-          "name": "结构",
-          "groupId": "lower",
-          "groupName": "下装",
-          "type": "single",
-          "note": "",
-          "activeWhen": {
-            "outfit_mode": [
-              "上下装",
-              "成套装"
-            ]
-          },
-          "options": [
-            "简洁裁片",
-            "不对称裁片",
-            "交叉织带",
-            "细绳系结",
-            "褶皱抽绳",
-            "多层叠搭",
-            "胸挡结构",
-            "肩带承重",
-            "扣具连接",
-            "异材拼接",
-            "网纱拼接",
-            "缎面蕾丝拼接"
-          ],
-          "customOptions": []
-        },
-        {
-          "id": "lower_lining",
-          "name": "内衬",
-          "groupId": "lower",
-          "groupName": "下装",
-          "type": "single",
-          "note": "不得把透视外层直接等同于私密部位透出；按品类设计遮挡。",
-          "activeWhen": {
-            "outfit_mode": [
-              "上下装",
-              "成套装"
-            ]
-          },
-          "options": [
-            "不透明面料",
-            "完整不透明内衬",
-            "重点区域不透明内衬",
-            "双层面料",
-            "局部透明外层"
-          ],
-          "customOptions": []
-        },
-        {
           "id": "lower_color",
           "name": "颜色",
-          "groupId": "lower",
-          "groupName": "下装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1377,18 +1164,12 @@
             "花纹"
           ],
           "customOptions": []
-        }
-      ]
-    },
-    {
-      "id": "onepiece",
-      "name": "一体装",
-      "fields": [
+        },
         {
           "id": "onepiece_kind",
           "name": "品类",
-          "groupId": "onepiece",
-          "groupName": "一体装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1416,8 +1197,8 @@
         {
           "id": "onepiece_fabric",
           "name": "面料",
-          "groupId": "onepiece",
-          "groupName": "一体装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1458,8 +1239,8 @@
         {
           "id": "onepiece_fit",
           "name": "贴合",
-          "groupId": "onepiece",
-          "groupName": "一体装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1481,8 +1262,8 @@
         {
           "id": "onepiece_length",
           "name": "长度",
-          "groupId": "onepiece",
-          "groupName": "一体装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1505,8 +1286,8 @@
         {
           "id": "onepiece_neckline",
           "name": "领口",
-          "groupId": "onepiece",
-          "groupName": "一体装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1534,8 +1315,8 @@
         {
           "id": "onepiece_sleeve",
           "name": "袖型",
-          "groupId": "onepiece",
-          "groupName": "一体装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1560,8 +1341,8 @@
         {
           "id": "onepiece_cutout",
           "name": "镂空",
-          "groupId": "onepiece",
-          "groupName": "一体装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1586,61 +1367,10 @@
           "customOptions": []
         },
         {
-          "id": "onepiece_structure",
-          "name": "结构",
-          "groupId": "onepiece",
-          "groupName": "一体装",
-          "type": "single",
-          "note": "",
-          "activeWhen": {
-            "outfit_mode": [
-              "连衣裙",
-              "连体装"
-            ]
-          },
-          "options": [
-            "简洁裁片",
-            "不对称裁片",
-            "交叉织带",
-            "细绳系结",
-            "褶皱抽绳",
-            "多层叠搭",
-            "胸挡结构",
-            "肩带承重",
-            "扣具连接",
-            "异材拼接",
-            "网纱拼接",
-            "缎面蕾丝拼接"
-          ],
-          "customOptions": []
-        },
-        {
-          "id": "onepiece_lining",
-          "name": "内衬",
-          "groupId": "onepiece",
-          "groupName": "一体装",
-          "type": "single",
-          "note": "不得把透视外层直接等同于私密部位透出；按品类设计遮挡。",
-          "activeWhen": {
-            "outfit_mode": [
-              "连衣裙",
-              "连体装"
-            ]
-          },
-          "options": [
-            "不透明面料",
-            "完整不透明内衬",
-            "重点区域不透明内衬",
-            "双层面料",
-            "局部透明外层"
-          ],
-          "customOptions": []
-        },
-        {
           "id": "onepiece_color",
           "name": "颜色",
-          "groupId": "onepiece",
-          "groupName": "一体装",
+          "groupId": "outfit",
+          "groupName": "服装",
           "type": "single",
           "note": "",
           "activeWhen": {
@@ -1671,6 +1401,186 @@
             "撞色",
             "渐变",
             "花纹"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear",
+          "name": "外搭款式",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "大片级视觉核心：外搭占据画面大幅轮廓与层次，极大影响气场与风格。",
+          "activeWhen": null,
+          "options": [
+            "无外搭",
+            "廓形西装",
+            "经典风衣",
+            "羊绒长大衣",
+            "慵懒针织开衫",
+            "机车皮夹克",
+            "粗花呢小香风",
+            "复古牛仔外套",
+            "哑光麂皮夹克",
+            "羊羔毛外套",
+            "透光轻薄衬衫",
+            "羊绒披肩斗篷",
+            "居家睡衣外套",
+            "丝绸晨袍睡袍",
+            "防晒轻薄罩衫",
+            "棒球夹克"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear_fabric",
+          "name": "外搭面料",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "决定外搭的质感反光与垂坠重力。",
+          "activeWhen": null,
+          "options": [
+            "重磅精纺羊毛",
+            "双面细腻羊绒",
+            "复古水洗真皮",
+            "细腻哑光麂皮",
+            "垂坠风衣华达呢",
+            "粗花呢编织织物",
+            "真丝素绉缎",
+            "真丝双绉",
+            "透光乔其纱",
+            "复古丝绒",
+            "柔软羊毛针织",
+            "蓬松软糯马海毛",
+            "挺括水洗牛仔",
+            "透光轻盈亚麻真丝",
+            "纯棉平纹",
+            "醋酸高级缎面"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear_wear",
+          "name": "穿法体态",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "外搭穿法是松弛感与大片气场的视觉灵魂。",
+          "activeWhen": null,
+          "options": [
+            "敞开衣襟迎风",
+            "随意披在肩上",
+            "腰带随性系结",
+            "单侧滑落露肩",
+            "双手插兜微敞",
+            "扣好立领修身",
+            "随意挽起袖口",
+            "半搭半落慵懒姿态",
+            "胸前自然垂坠敞开",
+            "自然系扣修身"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear_fit",
+          "name": "外搭版型",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "外搭剪裁轮廓与廓形张力。",
+          "activeWhen": null,
+          "options": [
+            "超大廓形(Oversized)",
+            "修身收腰剪裁",
+            "自然垂坠直筒",
+            "经典落肩阔型",
+            "微收腰中长款",
+            "箱型短阔版型"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear_length",
+          "name": "外搭长度",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "外搭衣长比例。",
+          "activeWhen": null,
+          "options": [
+            "及腰短款",
+            "及臀中短款",
+            "及膝中长款",
+            "过膝长款",
+            "及踝超长款"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "outerwear_color",
+          "name": "外搭颜色",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "外搭主体色系。",
+          "activeWhen": null,
+          "options": [
+            "经典驼色",
+            "燕麦奶白",
+            "深炭灰",
+            "纯黑",
+            "焦糖暖棕",
+            "勃艮第酒红",
+            "橄榄绿",
+            "复古藏青",
+            "水洗浅蓝",
+            "温柔莫兰迪粉",
+            "浅香槟米",
+            "复古墨绿",
+            "雾霾蓝",
+            "咖啡棕"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "socks",
+          "name": "袜类",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "",
+          "activeWhen": null,
+          "options": [
+            "无袜",
+            "短袜",
+            "中筒袜",
+            "长袜",
+            "连裤袜",
+            "薄丝袜",
+            "运动袜"
+          ],
+          "customOptions": []
+        },
+        {
+          "id": "footwear",
+          "name": "鞋履",
+          "groupId": "outfit",
+          "groupName": "服装",
+          "type": "single",
+          "note": "白袜不等于赤足，场景需鞋时明确设计。",
+          "activeWhen": null,
+          "options": [
+            "运动鞋",
+            "帆布鞋",
+            "乐福鞋",
+            "平底鞋",
+            "凉鞋",
+            "高跟鞋",
+            "短靴",
+            "长靴",
+            "拖鞋",
+            "赤足"
           ],
           "customOptions": []
         }
@@ -2181,8 +2091,5 @@
         }
       ]
     }
-  ],
-  "totalGroups": 11,
-  "totalFields": 85,
-  "totalDefaultOptions": 949
+  ]
 }

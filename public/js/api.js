@@ -320,6 +320,21 @@ If previous titles or styles are mentioned, introduce creative divergence in lig
   },
 
   // 5. 生图测试与调用
+  imageAbortController: null,
+
+  abortCurrentImageGen() {
+    if (this.imageAbortController) {
+      try {
+        this.imageAbortController.abort();
+      } catch (e) {
+        console.warn('Abort error:', e);
+      }
+      this.imageAbortController = null;
+      return true;
+    }
+    return false;
+  },
+
   async testImageGen(config) {
     const settings = await ApiService.getSettings();
     const cfg = config || settings?.imageGen || (typeof state !== 'undefined' ? state.settings?.imageGen : null) || {};
@@ -378,175 +393,202 @@ If previous titles or styles are mentioned, introduce creative divergence in lig
   },
 
   async generateImage(prompt, size, title, config) {
-    const settings = await ApiService.getSettings();
-    const cfg = config || settings?.imageGen || (typeof state !== 'undefined' ? state.settings?.imageGen : null) || {};
-    if (!ApiService.isTauri()) {
-      try {
-        const res = await fetch('/api/image/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, size, title, config: cfg })
-        });
-        const ct = res.headers.get('content-type') || '';
-        if (res.ok && ct.includes('application/json')) return await res.json();
-        let errMsg = `服务端生图异常 (${res.status})`;
+    const controller = new AbortController();
+    this.imageAbortController = controller;
+    const signal = controller.signal;
+
+    try {
+      const settings = await ApiService.getSettings();
+      const cfg = config || settings?.imageGen || (typeof state !== 'undefined' ? state.settings?.imageGen : null) || {};
+      if (!ApiService.isTauri()) {
         try {
-          const errJson = await res.json();
-          if (errJson && errJson.error) errMsg = errJson.error;
-        } catch (_) {
-          const errText = await res.text();
-          if (errText) errMsg = `${errMsg}: ${errText}`;
+          const res = await fetch('/api/image/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, size, title, config: cfg }),
+            signal
+          });
+          const ct = res.headers.get('content-type') || '';
+          if (res.ok && ct.includes('application/json')) return await res.json();
+          let errMsg = `服务端生图异常 (${res.status})`;
+          try {
+            const errJson = await res.json();
+            if (errJson && errJson.error) errMsg = errJson.error;
+          } catch (_) {
+            const errText = await res.text();
+            if (errText) errMsg = `${errMsg}: ${errText}`;
+          }
+          throw new Error(errMsg);
+        } catch (e) {
+          if (e.name === 'AbortError' || signal.aborted) {
+            throw new Error('用户已取消生图任务');
+          }
+          // 若服务端返回了业务错误或明确抛错，直接向外抛出，绝不静默重试防二次扣费
+          const msg = e.message || '';
+          if (!msg.includes('Failed to fetch') && !msg.includes('NetworkError') && !msg.includes('Unexpected token') && !msg.includes('is not valid JSON')) {
+            throw e;
+          }
+          console.warn('后端服务不可达，尝试前端直连兜底:', e.message);
         }
-        throw new Error(errMsg);
-      } catch (e) {
-        // 若服务端返回了业务错误或明确抛错，直接向外抛出，绝不静默重试防二次扣费
-        const msg = e.message || '';
-        if (!msg.includes('Failed to fetch') && !msg.includes('NetworkError') && !msg.includes('Unexpected token') && !msg.includes('is not valid JSON')) {
-          throw e;
-        }
-        console.warn('后端服务不可达，尝试前端直连兜底:', e.message);
       }
-    }
 
-    const baseUrl = (cfg.baseUrl || 'https://api.gemai.cc/v1').replace(/\/+$/, '');
-    const apiKey = cfg.apiKey || '';
-    const model = cfg.model || 'gpt-image-2.5-low';
-    const provider = cfg.provider || (baseUrl.includes('dashscope') || (model && model.startsWith('wanx')) ? 'dashscope' : (baseUrl.includes('siliconflow') ? 'siliconflow' : 'custom'));
-    if (!apiKey || apiKey.includes('•') || apiKey.includes('\u2022')) throw new Error('未配置有效生图 API Key (当前凭证脱敏中)，请在右上角「API 接口设置」中填写');
+      if (signal.aborted) throw new Error('用户已取消生图任务');
 
-    let url = '';
+      const baseUrl = (cfg.baseUrl || 'https://api.gemai.cc/v1').replace(/\/+$/, '');
+      const apiKey = cfg.apiKey || '';
+      const model = cfg.model || 'gpt-image-2.5-low';
+      const provider = cfg.provider || (baseUrl.includes('dashscope') || (model && model.startsWith('wanx')) ? 'dashscope' : (baseUrl.includes('siliconflow') ? 'siliconflow' : 'custom'));
+      if (!apiKey || apiKey.includes('•') || apiKey.includes('\u2022')) throw new Error('未配置有效生图 API Key (当前凭证脱敏中)，请在右上角「API 接口设置」中填写');
 
-    // DashScope 百炼千问与万相生图分流
-    if (provider === 'dashscope' || baseUrl.includes('dashscope') || (model && (model.startsWith('wanx') || model.includes('qwen-image')))) {
-      if (model && model.toLowerCase().includes('qwen-image')) {
-        // Qwen-Image 官方标准走百炼多模态生成通道
-        const cleanSize = (size || '1024x1024').toLowerCase().replace('x', '*');
-        const r = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
+      let url = '';
+
+      // DashScope 百炼千问与万相生图分流
+      if (provider === 'dashscope' || baseUrl.includes('dashscope') || (model && (model.startsWith('wanx') || model.includes('qwen-image')))) {
+        if (model && model.toLowerCase().includes('qwen-image')) {
+          // Qwen-Image 官方标准走百炼多模态生成通道
+          const cleanSize = (size || '1024x1024').toLowerCase().replace('x', '*');
+          const r = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: model || 'qwen-image-3.0',
+              input: {
+                messages: [
+                  {
+                    role: 'user',
+                    content: [{ text: prompt }]
+                  }
+                ]
+              },
+              parameters: {
+                size: cleanSize,
+                n: 1
+              }
+            }),
+            signal
+          });
+          if (!r.ok) {
+            const t = await r.text();
+            throw new Error(`百炼千问生图调用失败 (${r.status}): ${t}`);
+          }
+          const data = await r.json();
+          url = data.output?.choices?.[0]?.message?.content?.[0]?.image || data.data?.[0]?.url || '';
+        } else {
+          // 通义万相原生异步任务模式
+          const cleanSize = (size || '1024x1024').toLowerCase().replace('x', '*');
+          const submitRes = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+              'X-DashScope-Async': 'enable'
+            },
+            body: JSON.stringify({
+              model: model || 'wanx2.1-t2i-turbo',
+              input: { prompt },
+              parameters: { size: cleanSize, n: 1 }
+            }),
+            signal
+          });
+          if (!submitRes.ok) {
+            const t = await submitRes.text();
+            throw new Error(`百炼万相生图提交失败 (${submitRes.status}): ${t}`);
+          }
+          const sData = await submitRes.json();
+          const taskId = sData.output?.task_id;
+          if (!taskId) throw new Error('百炼未返回任务 ID');
+
+          const maxWait = 120000;
+          const start = Date.now();
+          while (Date.now() - start < maxWait) {
+            if (signal.aborted) throw new DOMException('用户已取消生图请求', 'AbortError');
+            await new Promise(res => setTimeout(res, 1500));
+            if (signal.aborted) throw new DOMException('用户已取消生图请求', 'AbortError');
+            const pollRes = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`, {
+              headers: { 'Authorization': `Bearer ${apiKey}` },
+              signal
+            });
+            if (pollRes.ok) {
+              const pData = await pollRes.json();
+              if (pData.output?.task_status === 'SUCCEEDED') {
+                url = pData.output?.results?.[0]?.url;
+                break;
+              } else if (pData.output?.task_status === 'FAILED') {
+                throw new Error(`百炼万相生图任务失败: ${pData.output?.message || '未知错误'}`);
+              }
+            }
+          }
+          if (!url) throw new Error('百炼万相生图超时或未获取到图片');
+        }
+      } else {
+        const r = await fetch(`${baseUrl}/images/generations`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
           },
           body: JSON.stringify({
-            model: model || 'qwen-image-3.0',
-            input: {
-              messages: [
-                {
-                  role: 'user',
-                  content: [{ text: prompt }]
-                }
-              ]
-            },
-            parameters: {
-              size: cleanSize,
-              n: 1
-            }
-          })
+            model: model,
+            prompt: prompt,
+            size: size || '1024x1024',
+            n: 1
+          }),
+          signal
         });
         if (!r.ok) {
           const t = await r.text();
-          throw new Error(`百炼千问生图调用失败 (${r.status}): ${t}`);
+          throw new Error(`生图接口调用失败 (${r.status}): ${t}`);
         }
         const data = await r.json();
-        url = data.output?.choices?.[0]?.message?.content?.[0]?.image || data.data?.[0]?.url || '';
-      } else {
-        // 通义万相原生异步任务模式
-        const cleanSize = (size || '1024x1024').toLowerCase().replace('x', '*');
-        const submitRes = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'X-DashScope-Async': 'enable'
-          },
-          body: JSON.stringify({
-            model: model || 'wanx2.1-t2i-turbo',
-            input: { prompt },
-            parameters: { size: cleanSize, n: 1 }
-          })
-        });
-        if (!submitRes.ok) {
-          const t = await submitRes.text();
-          throw new Error(`百炼万相生图提交失败 (${submitRes.status}): ${t}`);
-        }
-        const sData = await submitRes.json();
-        const taskId = sData.output?.task_id;
-        if (!taskId) throw new Error('百炼未返回任务 ID');
-
-        const maxWait = 120000;
-        const start = Date.now();
-        while (Date.now() - start < maxWait) {
-          await new Promise(res => setTimeout(res, 1500));
-          const pollRes = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`, {
-            headers: { 'Authorization': `Bearer ${apiKey}` }
-          });
-          if (pollRes.ok) {
-            const pData = await pollRes.json();
-            if (pData.output?.task_status === 'SUCCEEDED') {
-              url = pData.output?.results?.[0]?.url;
-              break;
-            } else if (pData.output?.task_status === 'FAILED') {
-              throw new Error(`百炼万相生图任务失败: ${pData.output?.message || '未知错误'}`);
-            }
-          }
-        }
-        if (!url) throw new Error('百炼万相生图超时或未获取到图片');
+        url = data.data?.[0]?.url || (data.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : '');
       }
-    } else {
-      const r = await fetch(`${baseUrl}/images/generations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: model,
-          prompt: prompt,
-          size: size || '1024x1024',
-          n: 1
-        })
-      });
-      if (!r.ok) {
-        const t = await r.text();
-        throw new Error(`生图接口调用失败 (${r.status}): ${t}`);
-      }
-      const data = await r.json();
-      url = data.data?.[0]?.url || (data.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : '');
-    }
-    if (!url) throw new Error('未获取到生成的图片地址');
-    let localPath = url;
-    let savedSuccess = false;
-    let savedPath = '';
-    let savedFile = '';
-    let savedError = '';
-    try {
-      const saveRes = await ApiService.saveLocalImage(url, title);
-      if (saveRes && saveRes.success && saveRes.savedPath) {
-        savedSuccess = true;
-        savedPath = saveRes.savedPath;
-        savedFile = saveRes.filename || '';
-        localPath = savedPath;
-      } else {
+      if (!url) throw new Error('未获取到生成的图片地址');
+      let localPath = url;
+      let savedSuccess = false;
+      let savedPath = '';
+      let savedFile = '';
+      let savedError = '';
+      try {
+        const saveRes = await ApiService.saveLocalImage(url, title);
+        if (saveRes && saveRes.success && saveRes.savedPath) {
+          savedSuccess = true;
+          savedPath = saveRes.savedPath;
+          savedFile = saveRes.filename || '';
+          localPath = savedPath;
+        } else {
+          savedSuccess = false;
+          savedError = saveRes?.error || '未能写入本地磁盘';
+        }
+      } catch (e) {
         savedSuccess = false;
-        savedError = saveRes?.error || '未能写入本地磁盘';
+        savedError = e.message;
+        console.warn('Auto save local image failed:', e);
       }
-    } catch (e) {
-      savedSuccess = false;
-      savedError = e.message;
-      console.warn('Auto save local image failed:', e);
-    }
 
-    return {
-      success: true,
-      imageUrl: url,
-      localPath: localPath,
-      savedSuccess: savedSuccess,
-      savedPath: savedPath,
-      savedFile: savedFile,
-      savedError: savedError,
-      title: title || '摄影作品',
-      prompt: prompt
-    };
+      return {
+        success: true,
+        imageUrl: url,
+        localPath: localPath,
+        savedSuccess: savedSuccess,
+        savedPath: savedPath,
+        savedFile: savedFile,
+        savedError: savedError,
+        title: title || '摄影作品',
+        prompt: prompt
+      };
+    } catch (e) {
+      if (e.name === 'AbortError' || signal.aborted) {
+        throw new Error('用户已取消生图任务');
+      }
+      throw e;
+    } finally {
+      if (this.imageAbortController === controller) {
+        this.imageAbortController = null;
+      }
+    }
   },
 
   // 5.2 保存图片到本地 (Tauri 原生 Rust 直写 + 服务端兜底 + 浏览器自动下载兜底)

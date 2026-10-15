@@ -263,6 +263,11 @@ async function initApp() {
     updateActiveConditionals();
     renderLockPool();
     updateAspectRatioDisplay();
+    const draftPrompt = localStorage.getItem('xingse_draft_prompt');
+    const box = document.getElementById('main-prompt-box');
+    if (box && !box.value && draftPrompt) {
+      box.value = draftPrompt;
+    }
     updatePromptBoxStatus();
     updateStatusSummary();
 
@@ -975,7 +980,9 @@ function updatePromptBoxStatus() {
   if (charCount) charCount.textContent = `${text.length} 字`;
 
   if (genBtn) {
-    if (text.length > 0 && !state.isGeneratingImage && !state.isGeneratingLlm) {
+    if (state.isGeneratingImage) {
+      genBtn.disabled = false;
+    } else if (text.length > 0 && !state.isGeneratingLlm) {
       genBtn.disabled = false;
     } else {
       genBtn.disabled = true;
@@ -1061,6 +1068,9 @@ function updatePromptBoxFromCurrentSelections() {
   }
 
   mainPromptBox.value = prompt;
+  try {
+    localStorage.setItem('xingse_draft_prompt', prompt);
+  } catch (_) {}
   updatePromptBoxStatus();
 }
 
@@ -1481,6 +1491,23 @@ function updateQuickModelSelect() {
   manageOpt.value = '__open_settings__';
   manageOpt.textContent = '⚙️ + 配置更多生图平台...';
   selectEl.appendChild(manageOpt);
+
+  // 4. 同步更新快捷模型条的 API Key 授权就绪状态徽章
+  const statusEl = document.getElementById('quick-model-key-status');
+  if (statusEl) {
+    const isConfigured = isImageProviderConfigured(activeProvider);
+    if (isConfigured) {
+      statusEl.innerHTML = '<span style="color:#22c55e;">●</span> <span style="color:var(--text-secondary);">已配Key</span>';
+      statusEl.style.background = 'rgba(34, 197, 94, 0.08)';
+      statusEl.style.border = '1px solid rgba(34, 197, 94, 0.25)';
+      statusEl.title = `平台 [${activeProvider}] 已授权 API Key，可直接生图`;
+    } else {
+      statusEl.innerHTML = '<span style="color:#ef4444;">●</span> <span style="color:#f87171; font-weight:500;">未配Key</span>';
+      statusEl.style.background = 'rgba(239, 68, 68, 0.12)';
+      statusEl.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+      statusEl.title = `平台 [${activeProvider}] 尚未配置有效 API Key，点击前往配置`;
+    }
+  }
 }
 
 // 顶部栏 API 就绪状态徽章
@@ -1915,9 +1942,13 @@ async function handleAiOptimizePrompt() {
   }
 }
 
-// 🚀 生图：直接读取并提交框内当前完整文字
+// 🚀 生图：直接读取并提交框内当前完整文字 (支持实时中断取消)
 async function handleGenerateImage() {
-  if (state.isGeneratingImage) return;
+  if (state.isGeneratingImage) {
+    ApiService.abortCurrentImageGen();
+    showToast('正在中断取消生图任务...', 'info');
+    return;
+  }
 
   const mainPromptBox = document.getElementById('main-prompt-box');
   const prompt = mainPromptBox ? mainPromptBox.value.trim() : '';
@@ -1945,8 +1976,13 @@ async function handleGenerateImage() {
   if (canvasLoading) canvasLoading.style.display = 'flex';
   if (canvasEmpty) canvasEmpty.style.display = 'none';
   if (genBtn) {
-    genBtn.disabled = true;
-    genBtn.innerHTML = '<span>🚀 渲染生成中...</span>';
+    genBtn.disabled = false;
+    genBtn.classList.add('is-generating');
+    genBtn.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      <span id="btn-generate-image-text">⏹ 取消生成</span>
+    `;
+    genBtn.title = 'AI 正在渲染中，点击可随时中断取消本次生成';
   }
 
   let startTime = Date.now();
@@ -2031,7 +2067,12 @@ async function handleGenerateImage() {
     loadGallery();
   } catch (err) {
     clearInterval(timerInterval);
-    showToast(err.message, 'error');
+    const isCancel = err.name === 'AbortError' || (err.message && (err.message.includes('取消') || err.message.includes('aborted') || err.message.includes('Aborted')));
+    if (isCancel) {
+      showToast('已取消本次生图任务', 'info');
+    } else {
+      showToast(err.message, 'error');
+    }
     if (canvasEmpty) canvasEmpty.style.display = 'flex';
     if (canvasImg) canvasImg.style.display = 'none';
     if (footerBar) footerBar.style.display = 'none';
@@ -2039,10 +2080,12 @@ async function handleGenerateImage() {
     state.isGeneratingImage = false;
     if (canvasLoading) canvasLoading.style.display = 'none';
     if (genBtn) {
+      genBtn.classList.remove('is-generating');
       genBtn.innerHTML = `
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         <span id="btn-generate-image-text">🚀 生图</span>
       `;
+      genBtn.title = '直接读取并提交框内当前完整文字进行生图';
     }
     updatePromptBoxStatus();
   }
@@ -2128,7 +2171,7 @@ function renderFilmstrip() {
     const safeImgSrc = escapeHtml(item.displayUrl || item.imageUrl || '');
     thumb.title = `《${safeTitle}》· 点击切换对比并支持快捷微调`;
     thumb.innerHTML = `
-      <img src="${safeImgSrc}" alt="${safeTitle}" />
+      <img src="${safeImgSrc}" alt="${safeTitle}" loading="lazy" decoding="async" />
       <button class="filmstrip-del-btn" title="从胶卷与历史中移除此作品" data-id="${item.id}">✕</button>
     `;
 
@@ -2467,7 +2510,7 @@ function renderGallery() {
 
     card.innerHTML = `
       <div class="gallery-card-img-wrap">
-        <img src="${safeImgSrc}" alt="${safeTitle}" loading="lazy" />
+        <img src="${safeImgSrc}" alt="${safeTitle}" loading="lazy" decoding="async" />
         ${arText ? `<span class="gallery-card-badge">${arText}</span>` : ''}
         
         <!-- 浮动操作按钮条 -->
@@ -2690,6 +2733,18 @@ function bindGlobalEvents() {
   // 提示词工作区正下方操作按钮群
   document.getElementById('btn-director-match-studio')?.addEventListener('click', handleAiDirectorMatch);
   document.getElementById('btn-generate-image')?.addEventListener('click', handleGenerateImage);
+  document.getElementById('btn-cancel-generation-canvas')?.addEventListener('click', () => {
+    if (state.isGeneratingImage) {
+      ApiService.abortCurrentImageGen();
+      showToast('正在中断取消生图任务...', 'info');
+    }
+  });
+  document.getElementById('btn-assemble-prompt-studio')?.addEventListener('click', () => {
+    updatePromptBoxFromCurrentSelections();
+    const warningBanner = document.getElementById('prompt-outdated-warning');
+    if (warningBanner) warningBanner.style.display = 'none';
+    showToast('✓ 已将当前选中的所有维度在本地快速组装写入提示词框！', 'success');
+  });
   document.getElementById('btn-ai-optimize-prompt')?.addEventListener('click', handleAiOptimizePrompt);
   document.getElementById('btn-random-sample-studio')?.addEventListener('click', runRandomSample);
 
@@ -2705,6 +2760,7 @@ function bindGlobalEvents() {
     const box = document.getElementById('main-prompt-box');
     if (box) {
       box.value = '';
+      try { localStorage.removeItem('xingse_draft_prompt'); } catch (_) {}
       updatePromptBoxStatus();
       const warningBanner = document.getElementById('prompt-outdated-warning');
       if (warningBanner) warningBanner.style.display = 'none';
@@ -2712,10 +2768,11 @@ function bindGlobalEvents() {
     }
   });
 
-  // 监听提示词框输入，实时同步字数与生图按钮禁用状态
+  // 监听提示词框输入，实时同步字数与生图按钮禁用状态，并持久化本地草稿
   const mainPromptBox = document.getElementById('main-prompt-box');
   mainPromptBox?.addEventListener('input', () => {
     updatePromptBoxStatus();
+    try { localStorage.setItem('xingse_draft_prompt', mainPromptBox.value); } catch (_) {}
     const warningBanner = document.getElementById('prompt-outdated-warning');
     if (warningBanner) warningBanner.style.display = 'none';
   });
@@ -2881,6 +2938,11 @@ function bindGlobalEvents() {
   });
 
   document.getElementById('btn-quick-config-api')?.addEventListener('click', () => {
+    populateSettingsForm();
+    openModal('settings-modal');
+  });
+
+  document.getElementById('quick-model-key-status')?.addEventListener('click', () => {
     populateSettingsForm();
     openModal('settings-modal');
   });

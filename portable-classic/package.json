@@ -1,10 +1,14 @@
 {
   "name": "xingse-studio",
-  "version": "1.0.0",
+  "version": "0.7.6",
   "description": "形色 XINGSE - 摄影导演与提示词生图工作台",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
   },
   "keywords": [
     "prompt-generator",

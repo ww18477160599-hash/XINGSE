@@ -280,8 +280,9 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (pathname === '/api/custom-options' && req.method === 'DELETE') {
-        const body = await parseRequestBody(req);
-        const { fieldId, optionName } = body;
+        const body = await parseRequestBody(req).catch(() => ({}));
+        const fieldId = body.fieldId || reqUrl.searchParams.get('fieldId');
+        const optionName = body.optionName || reqUrl.searchParams.get('optionName');
         if (!fieldId || !optionName) {
           res.writeHead(400);
           res.end(JSON.stringify({ error: 'fieldId and optionName are required' }));

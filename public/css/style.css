@@ -54,6 +54,13 @@ body {
   display: flex;
   flex-direction: column;
   user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 关键修复：确保所有文本输入框、文本域与可编辑元素完全开放原生选择与输入能力，彻底解决 Windows/WebView2 下 IME 输入法和光标被 user-select:none 阻断导致“只能删除无法写入”的问题 */
+input, textarea, select, [contenteditable="true"] {
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
 /* 顶部导航条 */
@@ -1686,6 +1693,9 @@ body {
   padding: 14px 16px;
   resize: vertical;
   outline: none;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  pointer-events: auto !important;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
@@ -1738,6 +1748,20 @@ body {
   background: #334155;
   color: #94a3b8;
   border-color: transparent;
+}
+
+.btn-action-generate.is-generating {
+  background: linear-gradient(135deg, #dc2626, #991b1b) !important;
+  border-color: rgba(239, 68, 68, 0.7) !important;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.45) !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  animation: pulse-cancel 1.6s infinite ease-in-out;
+}
+
+@keyframes pulse-cancel {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.88; transform: scale(0.985); }
 }
 
 /* 全屏大图灯箱预览 (Lightbox) */
