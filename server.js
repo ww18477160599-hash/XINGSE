@@ -82,22 +82,29 @@ function isMaskedKey(key) {
 
 // 自动还原真实 API Key: 若传入的是脱敏掩码，则从服务端持久化存储 settings.json 中安全提取真实 Key
 function resolveRealApiKey(inputKey, type, provider) {
+  const settings = readJson(SETTINGS_FILE, {});
+  const section = settings[type];
+
+  // 1. 若明确指定了 provider 且在该 provider 下配置了独立的真实 Key，绝对优先使用该渠道自身的有效 Key
+  if (provider && section?.providers?.[provider]?.apiKey && !isMaskedKey(section.providers[provider].apiKey)) {
+    const providerKey = section.providers[provider].apiKey.trim();
+    if (!inputKey || isMaskedKey(inputKey) || inputKey === section?.apiKey) {
+      return providerKey;
+    }
+  }
+
+  // 2. 若用户直接传入了有效的非脱敏明文 Key
   if (inputKey && !isMaskedKey(inputKey)) {
     return inputKey.trim();
   }
-  const settings = readJson(SETTINGS_FILE, {});
-  const section = settings[type];
   if (!section) return '';
 
-  // 1. 优先从特定平台的存档获取
-  if (provider && section.providers?.[provider]?.apiKey && !isMaskedKey(section.providers[provider].apiKey)) {
-    return section.providers[provider].apiKey.trim();
-  }
-  // 2. 从该类型顶层获取
+  // 3. 从该类型顶层全局配置提取有效 Key
   if (section.apiKey && !isMaskedKey(section.apiKey)) {
     return section.apiKey.trim();
   }
-  // 3. 兜底轮询各 providers 中的可用 Key
+
+  // 4. 兜底轮询各 providers 中的首个可用有效 Key
   if (section.providers) {
     for (const p in section.providers) {
       const k = section.providers[p]?.apiKey;
@@ -182,6 +189,8 @@ if ($res -eq [System.Windows.Forms.DialogResult]::OK) {
   });
 }
 
+
+
 // MIME 映射
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -195,6 +204,198 @@ const MIME_TYPES = {
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon'
 };
+
+// 本地图片落盘保存工具函数 (合并 Base64 与 URL 抓取下载)
+async function saveImageFileToDisk(imageUrl, localFilePath) {
+  if (imageUrl.startsWith('data:image/')) {
+    const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, '');
+    fs.writeFileSync(localFilePath, Buffer.from(base64Data, 'base64'));
+  } else if (imageUrl.startsWith('http')) {
+    const imgRes = await fetch(imageUrl);
+    if (!imgRes.ok) throw new Error(`下载远程图片失败 (HTTP ${imgRes.status})`);
+    const arrayBuffer = await imgRes.arrayBuffer();
+    fs.writeFileSync(localFilePath, Buffer.from(arrayBuffer));
+  } else {
+    throw new Error('不支持的图片数据格式');
+  }
+  if (!fs.existsSync(localFilePath) || fs.statSync(localFilePath).size === 0) {
+    throw new Error('写入文件失败：文件不存在或大小为0');
+  }
+  return true;
+}
+
+// 尺寸格式化器：根据不同生图平台规范化宽高格式
+function formatImageResolution(sizeStr, provider, model) {
+  const norm = (sizeStr || '1024x1024').toLowerCase().replace('*', 'x');
+  const [wStr, hStr] = norm.split('x');
+  const w = parseInt(wStr, 10) || 1024;
+  const h = parseInt(hStr, 10) || 1024;
+  const ratio = w / h;
+
+  // 1. 阿里云百炼 (通义千问生图 Qwen-Image 与 万相 Wanx 系列)
+  const isDashScope = provider === 'dashscope' ||
+    (model && (model.toLowerCase().includes('qwen-image') || model.toLowerCase().startsWith('wanx')));
+  if (isDashScope) {
+    if (ratio >= 1.6) return '1280*720';        // 16:9
+    if (ratio >= 1.4) return '1248*832';        // 3:2
+    if (ratio >= 1.2) return '1280*960';        // 4:3
+    if (ratio <= 0.6) return '720*1280';        // 9:16
+    if (ratio <= 0.7) return '832*1248';        // 2:3
+    if (ratio <= 0.85) return '960*1280';       // 3:4
+    return '1024*1024';                         // 1:1
+  }
+
+  // 2. 智谱 AI (CogView 系列)
+  if (provider === 'zhipu' || (model && model.toLowerCase().startsWith('cogview'))) {
+    if (ratio >= 1.6) return '1344x768';
+    if (ratio >= 1.2) return '1152x864';
+    if (ratio <= 0.6) return '768x1344';
+    if (ratio <= 0.85) return '864x1152';
+    return '1024x1024';
+  }
+
+  // 3. OpenAI DALL-E 与 GPT-Image 系列标准画幅适配 (1:1 -> 1024x1024, 9:16/竖版 -> 1024x1792, 16:9/横版 -> 1792x1024)
+  const isGptOrDallE = provider === 'openai' ||
+    (model && (model.toLowerCase().includes('dall-e') || model.toLowerCase().includes('gpt-image')));
+  if (isGptOrDallE) {
+    if (ratio >= 1.3) return '1792x1024';
+    if (ratio <= 0.77) return '1024x1792';
+    return '1024x1024';
+  }
+
+  // 4. 硅基流动或其他标准 OpenAI 兼容
+  return norm;
+}
+
+// 阿里云百炼 (DashScope) 智能生图分流调度:
+// 1. Qwen-Image 系列 (qwen-image-3.0, qwen-image-3.0-pro 等) 走百炼多模态生成通道 /api/v1/services/aigc/multimodal-generation/generation
+// 2. 通义万相系列 (wanx2.1-t2i-turbo, wanx2.1-t2i-plus 等) 走百炼原生异步任务服务 /api/v1/services/aigc/text2image/image-synthesis
+async function callDashScopeImageTask({ apiKey, model, prompt, size }) {
+  const targetModel = model || 'qwen-image-3.0';
+  const isQwenImage = targetModel.toLowerCase().includes('qwen-image');
+
+  // A. Qwen-Image 系列模型：百炼官方标准多模态生图接口
+  if (isQwenImage) {
+    const endpoint = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation';
+    const cleanSize = formatImageResolution(size, 'dashscope', targetModel);
+
+    const submitRes = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: targetModel,
+        input: {
+          messages: [
+            {
+              role: 'user',
+              content: [{ text: prompt }]
+            }
+          ]
+        },
+        parameters: {
+          size: cleanSize,
+          n: 1
+        }
+      })
+    });
+
+    if (!submitRes.ok) {
+      const errText = await submitRes.text();
+      throw new Error(`百炼千问生图请求失败 (HTTP ${submitRes.status}): ${errText}`);
+    }
+
+    const submitData = await submitRes.json();
+    const imgUrl = submitData.output?.choices?.[0]?.message?.content?.[0]?.image || submitData.data?.[0]?.url || '';
+    if (!imgUrl) {
+      throw new Error(`百炼千问未返回有效图片链接: ${JSON.stringify(submitData)}`);
+    }
+    return {
+      imageUrl: imgUrl,
+      raw: submitData
+    };
+  }
+
+  // B. 通义万相 Wanx 系列模型：原生异步任务队列与轮询
+  const formattedSize = formatImageResolution(size, 'dashscope', targetModel);
+  const endpoint = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis';
+
+  const bodyPayload = {
+    model: targetModel,
+    input: {
+      prompt: prompt
+    },
+    parameters: {
+      size: formattedSize,
+      n: 1
+    }
+  };
+
+  const submitRes = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'X-DashScope-Async': 'enable'
+    },
+    body: JSON.stringify(bodyPayload)
+  });
+
+  if (!submitRes.ok) {
+    const errText = await submitRes.text();
+    throw new Error(`百炼万相生图任务提交失败 (HTTP ${submitRes.status}): ${errText}`);
+  }
+
+  const submitData = await submitRes.json();
+  const taskId = submitData.output?.task_id;
+  if (!taskId) {
+    throw new Error(`百炼未返回任务 ID: ${JSON.stringify(submitData)}`);
+  }
+
+  // 轮询任务状态 (每 1.5 秒查询一次，最长等待 120 秒)
+  const pollUrl = `https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`;
+  const startTime = Date.now();
+  const maxWaitMs = 120000;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    await new Promise(r => setTimeout(r, 1500));
+    const taskRes = await fetch(pollUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+
+    if (!taskRes.ok) {
+      const errText = await taskRes.text();
+      throw new Error(`百炼查询任务状态失败 (HTTP ${taskRes.status}): ${errText}`);
+    }
+
+    const taskData = await taskRes.json();
+    const status = taskData.output?.task_status;
+
+    if (status === 'SUCCEEDED') {
+      const results = taskData.output?.results || [];
+      const imgUrl = results[0]?.url;
+      if (!imgUrl) {
+        throw new Error('百炼生图任务成功但未包含图片链接');
+      }
+      return {
+        imageUrl: imgUrl,
+        raw: taskData
+      };
+    } else if (status === 'FAILED') {
+      const errMsg = taskData.output?.message || taskData.output?.code || '生图任务执行失败';
+      throw new Error(`阿里云百炼生图失败: ${errMsg}`);
+    } else if (status === 'CANCELED') {
+      throw new Error('百炼生图任务已取消');
+    }
+  }
+
+  throw new Error('阿里云百炼生图任务超时 (已等待120秒)');
+}
 
 const server = http.createServer(async (req, res) => {
   const reqHost = req.headers.host || `127.0.0.1:${PORT}`;
@@ -545,179 +746,7 @@ const server = http.createServer(async (req, res) => {
         writeJson(HISTORY_FILE, history);
         res.writeHead(200);
         res.end(JSON.stringify({ success: true, count: history.length }));
-        return;
       }
-
-// 尺寸格式化器：根据不同生图平台规范化宽高格式
-function formatImageResolution(sizeStr, provider, model) {
-  const norm = (sizeStr || '1024x1024').toLowerCase().replace('*', 'x');
-  const [wStr, hStr] = norm.split('x');
-  const w = parseInt(wStr, 10) || 1024;
-  const h = parseInt(hStr, 10) || 1024;
-  const ratio = w / h;
-
-  // 1. 阿里云百炼 (通义千问生图 Qwen-Image 与 万相 Wanx 系列)
-  const isDashScope = provider === 'dashscope' ||
-    (model && (model.toLowerCase().includes('qwen-image') || model.toLowerCase().startsWith('wanx')));
-  if (isDashScope) {
-    if (ratio >= 1.6) return '1280*720';        // 16:9
-    if (ratio >= 1.4) return '1248*832';        // 3:2
-    if (ratio >= 1.2) return '1280*960';        // 4:3
-    if (ratio <= 0.6) return '720*1280';        // 9:16
-    if (ratio <= 0.7) return '832*1248';        // 2:3
-    if (ratio <= 0.85) return '960*1280';       // 3:4
-    return '1024*1024';                         // 1:1
-  }
-
-  // 2. 智谱 AI (CogView 系列)
-  if (provider === 'zhipu' || (model && model.toLowerCase().startsWith('cogview'))) {
-    if (ratio >= 1.6) return '1344x768';
-    if (ratio >= 1.2) return '1152x864';
-    if (ratio <= 0.6) return '768x1344';
-    if (ratio <= 0.85) return '864x1152';
-    return '1024x1024';
-  }
-
-  // 3. OpenAI DALL-E 3
-  if (model && model.toLowerCase().includes('dall-e-3')) {
-    if (ratio >= 1.3) return '1792x1024';
-    if (ratio <= 0.77) return '1024x1792';
-    return '1024x1024';
-  }
-
-  // 4. 硅基流动或其他标准 OpenAI 兼容
-  return norm;
-}
-
-// 阿里云百炼 (DashScope) 智能生图分流调度:
-// 1. Qwen-Image 系列 (qwen-image-3.0, qwen-image-3.0-pro 等) 走百炼多模态生成通道 /api/v1/services/aigc/multimodal-generation/generation
-// 2. 通义万相系列 (wanx2.1-t2i-turbo, wanx2.1-t2i-plus 等) 走百炼原生异步任务服务 /api/v1/services/aigc/text2image/image-synthesis
-async function callDashScopeImageTask({ apiKey, model, prompt, size }) {
-  const targetModel = model || 'qwen-image-3.0';
-  const isQwenImage = targetModel.toLowerCase().includes('qwen-image');
-
-  // A. Qwen-Image 系列模型：百炼官方标准多模态生图接口
-  if (isQwenImage) {
-    const endpoint = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation';
-    const cleanSize = formatImageResolution(size, 'dashscope', targetModel);
-
-    const submitRes = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: targetModel,
-        input: {
-          messages: [
-            {
-              role: 'user',
-              content: [{ text: prompt }]
-            }
-          ]
-        },
-        parameters: {
-          size: cleanSize,
-          n: 1
-        }
-      })
-    });
-
-    if (!submitRes.ok) {
-      const errText = await submitRes.text();
-      throw new Error(`百炼千问生图请求失败 (HTTP ${submitRes.status}): ${errText}`);
-    }
-
-    const submitData = await submitRes.json();
-    const imgUrl = submitData.output?.choices?.[0]?.message?.content?.[0]?.image || submitData.data?.[0]?.url || '';
-    if (!imgUrl) {
-      throw new Error(`百炼千问未返回有效图片链接: ${JSON.stringify(submitData)}`);
-    }
-    return {
-      imageUrl: imgUrl,
-      raw: submitData
-    };
-  }
-
-  // B. 通义万相 Wanx 系列模型：原生异步任务队列与轮询
-  const formattedSize = formatImageResolution(size, 'dashscope', targetModel);
-  const endpoint = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis';
-
-  const bodyPayload = {
-    model: targetModel,
-    input: {
-      prompt: prompt
-    },
-    parameters: {
-      size: formattedSize,
-      n: 1
-    }
-  };
-
-  const submitRes = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'X-DashScope-Async': 'enable'
-    },
-    body: JSON.stringify(bodyPayload)
-  });
-
-  if (!submitRes.ok) {
-    const errText = await submitRes.text();
-    throw new Error(`百炼万相生图任务提交失败 (HTTP ${submitRes.status}): ${errText}`);
-  }
-
-  const submitData = await submitRes.json();
-  const taskId = submitData.output?.task_id;
-  if (!taskId) {
-    throw new Error(`百炼未返回任务 ID: ${JSON.stringify(submitData)}`);
-  }
-
-  // 轮询任务状态 (每 1.5 秒查询一次，最长等待 120 秒)
-  const pollUrl = `https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`;
-  const startTime = Date.now();
-  const maxWaitMs = 120000;
-
-  while (Date.now() - startTime < maxWaitMs) {
-    await new Promise(r => setTimeout(r, 1500));
-    const taskRes = await fetch(pollUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
-    });
-
-    if (!taskRes.ok) {
-      const errText = await taskRes.text();
-      throw new Error(`百炼查询任务状态失败 (HTTP ${taskRes.status}): ${errText}`);
-    }
-
-    const taskData = await taskRes.json();
-    const status = taskData.output?.task_status;
-
-    if (status === 'SUCCEEDED') {
-      const results = taskData.output?.results || [];
-      const imgUrl = results[0]?.url;
-      if (!imgUrl) {
-        throw new Error('百炼生图任务成功但未包含图片链接');
-      }
-      return {
-        imageUrl: imgUrl,
-        raw: taskData
-      };
-    } else if (status === 'FAILED') {
-      const errMsg = taskData.output?.message || taskData.output?.code || '生图任务执行失败';
-      throw new Error(`阿里云百炼生图失败: ${errMsg}`);
-    } else if (status === 'CANCELED') {
-      throw new Error('百炼生图任务已取消');
-    }
-  }
-
-  throw new Error('阿里云百炼生图任务超时 (已等待120秒)');
-}
 
       // 7.3 LLM 提示词生成服务 (支持中文/英文 原生摄影导演撰写，非机翻)
       if (pathname === '/api/llm/generate' && req.method === 'POST') {
@@ -742,11 +771,11 @@ async function callDashScopeImageTask({ apiKey, model, prompt, size }) {
           return;
         }
 
-        // 识别目标生图模型的类型规范 (Engine Profiler: 区分千问、FLUX/SD、GPT/MJ)
+        // 识别目标生图模型的类型规范 (Engine Profiler: 适配 GPT-Image / 千问 / FLUX / SD / MJ)
         const targetModel = (body.targetModel || cfg.targetModel || readJson(SETTINGS_FILE, {}).imageGen?.model || '').toLowerCase();
         const targetProvider = (body.targetProvider || cfg.targetProvider || readJson(SETTINGS_FILE, {}).imageGen?.provider || '').toLowerCase();
 
-        let engineType = 'gpt_mj';
+        let engineType = 'gpt_image';
         if (targetModel.includes('qwen-image') || targetModel.startsWith('wanx') || targetProvider === 'dashscope') {
           engineType = 'dashscope_qwen';
         } else if (targetModel.includes('flux') || targetModel.includes('sd') || targetModel.includes('stable-diffusion') || targetProvider === 'siliconflow') {
@@ -755,67 +784,70 @@ async function callDashScopeImageTask({ apiKey, model, prompt, size }) {
 
         const isEnglish = (lang === 'en');
         const systemPrompt = isEnglish
-          ? `You are a world-renowned master fashion and fine-art portrait photography director, celebrated for extraordinary command of natural lighting optics, textural realism, tactile spatial depth, and evocative character emotion.
-Your mission is to formulate an independent, cohesive, and deeply detailed professional English photography prompt for adult female portraits, optimized directly for modern high-end image diffusion models (such as FLUX, Midjourney v6, SDXL, and Qwen-Image-3.0).
+          ? `You are an expert visual photography director specializing in adult female portraiture and boudoir/glamour aesthetics, operating exclusively to serve downstream image generation models (specifically GPT-Image, DALL-E 3, Midjourney, FLUX, and Qwen-Image).
+Your sole objective is to convert user locks and style preferences into a single, cohesive, highly visual English photography prompt that image models can directly parse and render into stunning pictures.
 
-[CORE PHOTOGRAPHIC DIRECTIVES]:
-1. Mandatory Adherence to User Locked Anchors:
-All user-specified locked attributes (formatted as [Group · Field = Value]) are absolute golden constraints. You must 100% strictly incorporate, preserve, and emphasize them in the scene. Never ignore, modify, or omit any locked item.
-2. Harmonic Composition & Negative Space:
-For all unlocked dimensions, freely curate and harmonize facial bone structure, weight distribution, authentic points of physical contact, spatial depth, atmospheric lighting temperature, and prime lens optics.
-3. Strict Wardrobe Architecture & Fabric Physics:
-Faithfully depict garment construction (e.g. separate upper/lower or one-piece), textile weaves (fine-gauge silk, raw linen, ribbed cotton, matte satin, sheer lace), natural gravitational drape, and seam tension.
-4. Physical Realism & Anatomical Grounding:
-The subject's pose must have credible physical weight and balance against contact surfaces (chair back, table edge, armrest, floor).
-5. Absolute Optical Skin Realism (Banish All Plastic/CG/Wax Doll Artifacts):
-Direct the visual rendering to achieve the authentic optical fidelity of flagship medium-format cameras (e.g., Hasselblad H6D-100c or Sony A7R V with 85mm f/1.4 prime lens at wide aperture):
-- Micro-pore epidermal texture, soft translucent subsurface scattering (SSS) along earlobes, jawline, and collarbones.
-- Delicate peach fuzz (vellus hair) glowing softly in backlight/rim light, natural sebaceous sheen without oily plastic sheen, authentic subtle capillaries and natural micro-freckles.
-- True-to-life shadows and skin fold contours with natural skin warmth and photographic dynamic range.
-6. Unique Naming & Creative Divergence:
-If previous titles or styles are mentioned, introduce creative divergence in lighting, mood, and pose, and craft a distinct English title.
-7. Engine-Targeted Syntax Profile (${engineType === 'dashscope_qwen' ? 'Qwen-Image / Wanx Concrete Visual Graph' : (engineType === 'flux_sd' ? 'FLUX / SD Factual Parametric Directives' : 'GPT / Midjourney Cinematic Fluid Narrative')}):
-${engineType === 'dashscope_qwen' ? '- Target Engine: Qwen-Image / Wanx. Structure the prompt as an orderly, layered visual graph: framing -> explicit facial bone structure & features -> zoned wardrobe textile physics -> mechanical weight bearing -> physical lighting angles and Kelvin temperature. Avoid vague poetic metaphors; specify concrete physical anchors.' : (engineType === 'flux_sd' ? '- Target Engine: FLUX / SD. Emphasize factual photographic parameters, optical primes, textile weaves, and anatomical realism with zero decorative fluff.' : '- Target Engine: GPT / Midjourney. Weave mood, posture, fabric drape, and lighting into a cohesive, fluid cinematic narrative prose.')}
+[CORE SERVING PRINCIPLES - NO SELF-INDULGENCE, ZERO CHECKLIST DUMPING]:
+1. Strictly Serve the Image Model:
+   - Your prompt is fed DIRECTLY to an image diffusion/autoregressive model. It is NOT an essay, NOT a memo, and NOT a critique for human readers.
+   - NEVER output numbered lists (like 1., 2., 3. or ①, ②, ③). NEVER divide into section headings (like [Facial Features], [Body Anatomy], [Lighting]).
+   - NEVER output meta-commentary, analytical jargon, or director monologues (e.g. "We have designed...", "The anatomical stress analysis reveals...", "In this project...").
+   - Output ONE single, continuous, highly immersive photography scene description (200-350 words).
 
-[REQUIRED OUTPUT FORMAT] (Strictly output these two sections with exact headers, no conversational filler):
+2. Capture Feminine Allure, Sexual Tension & Sensual Elegance:
+   - Modern attractive female portrait (20-25yo), refined facial bone structure, delicate jawline, captivating storytelling gaze looking into the camera, parted lips, effortless hair falling softly over bare shoulders and collarbones.
+   - High-tension, chic styling: champagne silk slip dress with delicate lace trim, oversized boyfriend shirt slipped off one shoulder, knit robe loosely draped, deep neckline accentuating graceful collarbones and neck, fitted waist-to-hip feminine silhouette.
+   - Relaxed, intimate posture: lounging naturally against a velvet sofa armrest, leaning by a sunlit window, or sitting softly on a plush carpet, relaxed curves, grounded contact points.
+   - Masterful lighting & optics: warm golden hour sidelight, gentle rim light illuminating hair strands and bare skin, 85mm f/1.4 prime lens, shallow depth of field, creamy background blur, natural pores and dewy skin glow (no plastic airbrushing), authentic film grain, photorealistic 8k masterpiece.
+
+3. Inviolable Locked Anchors:
+   - Any attribute marked [Group · Field = Value] is mandatory. You must strictly incorporate and highlight it in the scene. All unlocked dimensions are harmonized with your photography mastery.
+
+[REQUIRED OUTPUT FORMAT] (Only output these two sections, no other text):
 【作品企划标题】
-(A poetic 3 to 7 word photography collection title in English, e.g., "Morning Light on Raw Silk", "Solitude in Amber Hour", "Gilded Shadows", "Symphony of Dusk")
+(A concise, evocative 3-6 word English title)
 
 【摄影提示词】
-(A cohesive, richly detailed 200-350 word professional English photography prompt composed in native cinematographic and photographic terminology, ready for direct image generation)`
-          : `你是一位享誉国际的专业时尚与女性写真摄影导演，拥有敏锐的光影审美、空间构图感知力与镜头语言表现力。
-你的任务是根据用户提供的摄影需求和条件，设计独立完整的中文成年女性专业摄影提示词。
+(A single, continuous, highly visual English paragraph ready for direct image generation)`
+          : `你是专为下游生图模型（特别是 GPT-Image / DALL-E 3、通义千问 Qwen-Image、FLUX、Midjourney）服务的视觉人像摄影提示词大师。
+你的唯一任务是：深刻理解用户的锁定条件与风格诉求，为生图模型量身定制一段能直接出图、画面极具视觉吸引力与性张力的纯正摄影提示词！
 
-【形色摄影导演核心工作铁律】：
-1. 锁定条件保留（绝对硬性约束）：
-   用户指定的所有锁定条件（格式如「分组·字段名＝值」）为铁律，你必须100%严格保留、贯彻并在画面中重点呈现，绝对不得擅自篡改、削弱或丢弃。
-2. 留白美学与空间平衡：
-   未锁定的维度交由你作为摄影导演自由搭配，协调人物骨相五官、动作主辅支点受力与重心平衡、空间纵深、现场照明光位色温及镜头视角焦段。
-3. 服装分区严谨：
-   严格根据服装形式（上下装 vs 一体装）协调各层衣片、面料织物纤维质感、剪裁褶皱与垂坠感，停用分区的字段绝对不混入画面。
-4. 物理承重与空间接触：
-   模特姿态必须明确主辅支点（椅背、桌沿、地面等），身体与物体接触有真实物理受力形变，严禁悬空穿模。
-5. 七维近期去重与全新命名：
-   若用户附带了近期方案特征或当前片名，请确保本次方案在「人物骨相五官、服装搭配、动作支撑、构图关系、机位焦段、光影调性、情绪张力」中至少有4个可变维度产生显著新颖变化，且必须赋予一个全新的意境片名，拒绝同脸模板与同质化套路。
-6. 极致人物质感与皮肤光学真实度（核心灵魂·彻底告别塑料磨皮假感）：
-   画面必须以顶级单反相机（如哈苏中画幅/索尼A7R5 + 85mm f/1.4 原生实拍光圈）的光学质感为准绳，严禁塑料硅胶假人感、千篇一律滤镜脸与廉价CG磨皮：
-   提示词中必须重点细腻描绘原生皮肤的真实微观光学特征——逆光侧光下通透细腻的原生微绒、真实皮脂微光漫反射、鼻翼与眼周细微真实的毛细血管与原生肤色起伏、锁骨与肩颈真实自然的骨肉阴影、呼吸起伏的毛孔肌理与微汗光泽，呈现充满生命力的顶级电影胶片与 RAW 格式直出质感。
-7. 生图模型靶向语法规范 (${engineType === 'dashscope_qwen' ? '通义千问 / 万相物理具象图谱' : (engineType === 'flux_sd' ? 'FLUX / SD 事实型摄影参数' : 'GPT / Midjourney 电影级流动叙事')}):
-${engineType === 'dashscope_qwen' ? '   - 【当前目标：通义千问 / 万相 (Qwen-Image / Wanx)】：该模型对物理具象与结构分层极度敏感，对模糊抽象比喻易钝化退化成均值脸。必须严格采用分层图谱组织：①画幅机位 -> ②人物面部骨骼走向与清晰线条显式锚定（杜绝留白给底模自由发挥成大众脸） -> ③服饰微观织法与垂坠张力（精细分区） -> ④肢体物理承重受力 -> ⑤冷暖光比与光学景深。语言直击物理实体，杜绝空洞抒情。' : (engineType === 'flux_sd' ? '   - 【当前目标：FLUX.1 / SD 3.5】：采用高密度客观参数描述，剔除冗余文学修饰，聚焦骨骼结构走向、面料织物全称、机身焦段光圈参数及自然漫反射。' : '   - 【当前目标：GPT-Image / Midjourney】：采用流动性、画面感极强的专业摄影长叙事体，将人物情绪、骨相气质、服饰褶皱与现场环境光影无缝交织为一段富有张力的大片镜头。')}
+【核心工作铁律：一切为生图模型服务，坚决杜绝文字自嗨】：
+1. 你的产物是直接喂给生图模型的渲染指令，绝不是写给人类看的大纲或理论论文！
+   - 严禁输出编号清单（如①②③④、1. 2. 3.、一二三四）！
+   - 严禁拆分小标题（如【骨相五官】、【身材形体】、【服饰剪裁】、【受力分析】、【镜头光学】）！生图模型看到这些小标题会当作无意义文字或产生混乱噪点！
+   - 严禁自嗨式理论分析与空泛文学评论（严禁写“我们精心构思了一幅...”、“解剖学走势分析”、“物理受力支点计算”、“展现出极致的肉体张力”等抽象大话）！
+   - 必须融合成一段行云流水、自然连贯、画面感扑面而来的独立纯正摄影描述（通常200-350字），每一句话都是在具体描摹镜头中看得见的光影、人像、衣料、曲线与姿态！
 
-请严格按以下两段格式输出，不要输出任何多余的客套前言寒暄：
+2. 紧扣女性写真核心灵魂：现代时尚、纯欲微醺与高级性张力：
+   - 【神态与面容】：以现代年轻女性写真为主（20-25岁），五官立体清秀，眼神慵懒迷离带有微妙撩人的情绪张力，直视镜头，自然微翘的饱满唇峰，发丝轻柔散落在白皙肩颈与精致锁骨之间。
+   - 【撩人穿搭与身体曲线（性张力拉满且100%安全出图）】：
+     生图模型（特别是 GPT-Image）对粗暴违禁词（如“肉体”、“私密”、“底裤”、“湿身半透”）有机器误判拦截；
+     真正高级的性张力是视觉上的留白与质感诱惑——使用生图模型极度擅长呈现的高级时装语言：如香槟金色真丝细吊带短裙、微敞滑落至单肩的软糯针织开衫、领口自然的微露与锁骨起伏、轻薄微透的蕾丝滚边、勾勒出腰臀起伏的修身剪裁，曼妙起伏的女性曲线呼之欲出。
+   - 【松弛慵懒的私房与现代写真姿态】：
+     慵懒斜倚在复古绒布沙发扶手、侧坐于落地窗前阳光地毯、轻靠床沿单手挽起耳边碎发；肢体自然舒展，与沙发垫形成柔和贴合的依靠感，体态曼妙。
+   - 【大师级镜头与原生肤质】：
+     暖调午后侧逆光、发丝与肩颈边缘勾勒出温润轮廓光，空气中微尘光晕；哈苏85mm f/1.4人像定焦镜头大光圈，极浅景深，背景优雅奶油般虚化；皮肤通透水润富有呼吸感与真实微毛孔光泽，绝不塑料磨皮，电影级杰作。
+
+3. 绝对尊重锁定条件：
+   - 凡带有「【分组·字段】＝ 值」的条件为最高硬性要求，必须100%在画面主体中体现并融合。未锁定的维度自由搭配出最具视觉吸引力的画面。
+
+请严格仅按以下两段格式输出，不要有任何多余的客套寒暄：
 【作品企划标题】
-(必填！拟定4-8字简洁利落、具有高级光影意境的摄影片名，如《晨光与真丝》、《微澜暮色》、《影落朱弦》，严禁省略，严禁复用旧片名)
+(拟定4-8字富有艺术美感或引人入胜的摄影片名，如《真丝与午后私语》、《微醺暖阳》、《慵懒随想》)
 
 【摄影提示词】
-(300-500字独立完整的专业级摄影提示词，细节详实生动，语言流畅，可供生图模型直接出图)`;
+(单段自然连贯、极富视觉画面感与性张力的纯正摄影描述段落，直接提交给生图模型出图)`;
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120秒超时，充裕支持大模型深度构思
         try {
           const llmRes = await fetch(`${baseUrl}/chat/completions`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`
+              'Authorization': `Bearer ${apiKey}`,
+              'Accept-Encoding': 'identity'
             },
             body: JSON.stringify({
               model,
@@ -825,7 +857,8 @@ ${engineType === 'dashscope_qwen' ? '   - 【当前目标：通义千问 / 万�
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: prompt }
               ]
-            })
+            }),
+            signal: controller.signal
           });
 
           if (!llmRes.ok) {
@@ -843,9 +876,12 @@ ${engineType === 'dashscope_qwen' ? '   - 【当前目标：通义千问 / 万�
           res.end(JSON.stringify({ success: true, content, prompt: content, finishReason }));
           return;
         } catch (err) {
-          res.writeHead(500);
-          res.end(JSON.stringify({ error: `大模型连接异常: ${err.message}` }));
+          const isTimeout = err.name === 'AbortError' || (err.message && err.message.includes('aborted'));
+          res.writeHead(isTimeout ? 504 : 500);
+          res.end(JSON.stringify({ error: isTimeout ? '大模型请求超时 (120秒未响应)' : `大模型连接异常: ${err.message}` }));
           return;
+        } finally {
+          clearTimeout(timeoutId);
         }
       }
 
@@ -921,7 +957,7 @@ ${engineType === 'dashscope_qwen' ? '   - 【当前目标：通义千问 / 万�
         if (mode !== 'real_generate') {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒测试握手
 
             // 1. 阿里云百炼官方端点检测
             if (isDash) {
@@ -1110,7 +1146,6 @@ ${engineType === 'dashscope_qwen' ? '   - 【当前目标：通义千问 / 万�
           data = dashRes.raw;
           elapsedMs = Date.now() - startTime;
         } else {
-          // 标准 OpenAI 兼容生图
           const targetUrl = `${baseUrl}/images/generations`;
           const requestPayload = {
             model: model,
@@ -1124,7 +1159,7 @@ ${engineType === 'dashscope_qwen' ? '   - 【当前目标：通义千问 / 万�
             requestPayload.size = formatImageResolution(size, provider, model);
           }
 
-          const response = await fetch(targetUrl, {
+          let response = await fetch(targetUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1137,7 +1172,11 @@ ${engineType === 'dashscope_qwen' ? '   - 【当前目标：通义千问 / 万�
           if (!response.ok) {
             const errText = await response.text();
             res.writeHead(response.status);
-            res.end(JSON.stringify({ error: `生图 API 请求失败 (${response.status}): ${errText}`, elapsedMs }));
+            res.end(JSON.stringify({
+              error: `生图 API 请求失败 (${response.status}): ${errText}`,
+              model,
+              elapsedMs
+            }));
             return;
           }
 
@@ -1174,23 +1213,8 @@ ${engineType === 'dashscope_qwen' ? '   - 【当前目标：通义千问 / 万�
         let savedError = null;
 
         try {
-          if (imageUrl.startsWith('data:image/')) {
-            const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, '');
-            fs.writeFileSync(localFilePath, Buffer.from(base64Data, 'base64'));
-          } else if (imageUrl.startsWith('http')) {
-            const imgRes = await fetch(imageUrl);
-            if (imgRes.ok) {
-              const arrayBuffer = await imgRes.arrayBuffer();
-              fs.writeFileSync(localFilePath, Buffer.from(arrayBuffer));
-            } else {
-              savedError = `下载远程图片失败 (HTTP ${imgRes.status})`;
-            }
-          }
-          if (fs.existsSync(localFilePath) && fs.statSync(localFilePath).size > 0) {
-            savedSuccess = true;
-          } else if (!savedError) {
-            savedError = '写入文件失败：文件不存在或大小为0';
-          }
+          await saveImageFileToDisk(imageUrl, localFilePath);
+          savedSuccess = true;
         } catch (saveErr) {
           savedError = saveErr.message;
           console.warn('Auto save local image failed:', saveErr.message);
@@ -1235,30 +1259,15 @@ ${engineType === 'dashscope_qwen' ? '   - 【当前目标：通义千问 / 万�
         const localFilePath = path.join(saveDir, fileName);
 
         try {
-          if (imageUrl.startsWith('data:image/')) {
-            const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, '');
-            fs.writeFileSync(localFilePath, Buffer.from(base64Data, 'base64'));
-          } else if (imageUrl.startsWith('http')) {
-            const imgRes = await fetch(imageUrl);
-            if (imgRes.ok) {
-              const arrayBuffer = await imgRes.arrayBuffer();
-              fs.writeFileSync(localFilePath, Buffer.from(arrayBuffer));
-            } else {
-              throw new Error(`下载图片失败 (HTTP ${imgRes.status})`);
-            }
-          }
-          if (fs.existsSync(localFilePath) && fs.statSync(localFilePath).size > 0) {
-            res.writeHead(200);
-            res.end(JSON.stringify({
-              success: true,
-              savedFile: fileName,
-              savedPath: localFilePath,
-              localUrl: `/api/image-file?path=${encodeURIComponent(localFilePath)}`
-            }));
-            return;
-          } else {
-            throw new Error('写入磁盘后文件校验失败');
-          }
+          await saveImageFileToDisk(imageUrl, localFilePath);
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            savedFile: fileName,
+            savedPath: localFilePath,
+            localUrl: `/api/image-file?path=${encodeURIComponent(localFilePath)}`
+          }));
+          return;
         } catch (err) {
           res.writeHead(500);
           res.end(JSON.stringify({ error: err.message }));

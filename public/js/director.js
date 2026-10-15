@@ -4,6 +4,80 @@
 
 // 常用中英文摄影术语映射字典
 const EN_TERMS_MAP = {
+  '反差视觉张力': 'high-fashion stylistic contrast, striking juxtaposition of bold aesthetics and evocative atmosphere',
+  '赛博霓虹街区': 'cyberpunk neon city district, chromatic reflections on wet pavement, futuristic moody noir',
+  '暗黑哥特胶片': 'dark gothic cinematic photography, deep brooding shadows, mysterious ethereal romance',
+  '废土机能未来': 'post-apocalyptic tactical techwear editorial, weathered industrial textures, rugged dystopian aesthetic',
+  '极简静奢大片': 'quiet luxury minimalism, refined understated elegance, neutral tonal harmony, quiet wealth portraiture',
+  '千禧复古风': 'vintage Y2K aesthetic, nostalgic turn-of-the-century editorial vibe, glossy vivid color grading',
+  '极寒雪山': 'snow-capped mountain summit, majestic snowy peaks background, freezing alpine environment',
+  '冰川雪原': 'vast glacial ice field, crystalline blue ice reflections, pristine snow expanse',
+  '荒野戈壁': 'wild windswept desert expanse, dramatic weathered terrain, vast horizon',
+  '孤岛礁石': 'secluded coastal sea rocks, crashing ocean waves, rugged coastal cliffs',
+  '荒凉公路': 'isolated desert highway receding into distance, open asphalt road, cinematic road trip atmosphere',
+  '工业天台': 'industrial urban rooftop overlooking city skyline, metallic railings and concrete structures',
+  '暗调车库': 'moody subterranean parking garage, concrete columns, dramatic atmospheric pool of overhead light',
+  '复古酒吧': 'moody vintage speakeasy lounge, warm mahogany wood textures, amber glass glow',
+  '美术展厅': 'minimalist modern art gallery, clean stark white gallery walls, spatial negative space',
+  '无边泳池': 'infinity pool edge overlooking breathtaking panoramic horizon, crystalline turquoise water',
+  '风雪呼啸': 'swirling snow flurry in cold air, airborne snowflakes catching light, freezing winter gust',
+  '极地晴空': 'crisp crystal-clear polar daylight, brilliant arctic sun over snowy landscape',
+  '雨夜反光': 'glistening wet surfaces reflecting ambient light after rainfall, moody nocturnal atmosphere',
+  '薄雾清晨': 'ethereal morning mist gently swirling, soft diffused early dawn illumination',
+  '冷漠高级脸': 'aloof high-fashion poker face, distant haughty gaze, striking unapproachable allure',
+  '清冷厌世': 'disaffected melancholic gaze, nonchalant detached expression, captivating ennui',
+  '清冷禁欲': 'ascetic cool composure, serene unyielding poise, ethereal detachment',
+  '睥睨审视': 'commanding downward gaze, haughty critical appraisal, powerful self-assured aura',
+  '冰山疏离': 'ice-queen aloof distance, emotionally impenetrable, cool guarded elegance',
+  '冷酷锐利': 'piercing razor-sharp cold intensity, intense focused gaze',
+  '微醺迷离': 'subtly drunken hazy gaze, dreamy relaxed half-lidded eyes, soft flushed allure',
+  '空灵出神': 'ethereal faraway expression, contemplative reverie, lost in thought',
+  '挺拔傲立': 'standing tall with imposing proud posture, confident poised stature',
+  '仰头凝视': 'head tilted slightly upward, gazing upward with elongated neck line',
+  '单手撩发': 'one hand gracefully sweeping back strands of hair, relaxed gesture',
+  '双手环抱': 'arms gently crossed in front, self-contained protective and confident stance',
+  '挂脖比基尼': 'halterneck triangle bikini top, delicate neck ties, minimalist swimwear architecture',
+  '系带胸衣': 'lace-up structured corset bustier top, delicate criss-cross cord ties',
+  '露背上装': 'backless halter top revealing graceful shoulder blades and spine contour',
+  '透肤薄纱': 'sheer translucent gauzy top, delicate airy fabric revealing subtle contours beneath',
+  '工装背心': 'utilitarian tactical cargo vest top with minimalist hardware accents',
+  '比基尼泳裤': 'classic bikini bottom with clean minimalist cut, low-rise swimwear',
+  '高叉泳裤': 'high-cut leg cheeky bikini bottom, leg-lengthening silhouette',
+  '紧身皮裤': 'skin-tight glossy black leather trousers, hugging contours with natural sheen',
+  '低腰工装裤': 'low-rise relaxed cargo trousers with functional pockets and loose drape',
+  '侧开叉长裙': 'floor-length skirt with dramatic high side slit revealing leg on movement',
+  '高叉泳装': 'high-cut one-piece monokini swimsuit, sleek athletic and sensual silhouette',
+  '露背长裙': 'sweeping floor-length backless evening gown, dramatic open spine drop',
+  '乳胶紧身裙': 'body-contouring liquid latex mini dress, high-gloss reflective surface finish',
+  '高开叉旗袍': 'traditional tailored cheongsam qipao with modern high side slit, figure-hugging silk',
+  '真丝吊带裙': 'bias-cut lustrous pure silk slip dress, fluid drape over bodily contours',
+  '高弹泳装面料': 'technical high-stretch nylon-spandex swimwear fabric, smooth water-resistant finish',
+  '光泽乳胶': 'reflective liquid-sheen latex rubber, second-skin fit with specular highlights',
+  '薄纱蕾丝': 'delicate sheer tulle lace with intricate floral openwork, translucent softness',
+  '重磅真丝': 'heavyweight 30-momme mulberry silk satin, rich liquid drape and pearlescent luster',
+  '做旧皮革': 'distressed vintage tumbled leather with natural grain, authentic patina and creasing',
+  '重磅机车皮衣': 'heavyweight vintage black leather moto biker jacket with silver metal zippers',
+  '极地防寒羽绒': 'puffy alpine extreme-cold down parka with insulated baffle construction',
+  '蓬松仿皮草': 'plush voluminous faux fur statement coat, tactile soft texture',
+  '水洗牛仔外套': 'faded vintage washed denim trucker jacket, worn-in texture and dropped shoulders',
+  '薄透针织开衫': 'gossamer-thin open-front knit cardigan, sheer gossamer layering',
+  '微湿碎发': 'wisps of slightly damp hair softly clinging to brow and temples, fresh water droplets',
+  '背头湿发': 'slicked-back wet-look hair, combed smoothly away from face showcasing sharp bone structure',
+  '凌乱微卷': 'effortlessly tousled textured waves, relaxed natural bedhead movement',
+  '顺滑黑长直': 'silky raven-black bone-straight hair flowing smoothly down back with glassy sheen',
+  '微醺晒伤妆': 'sun-kissed blush swept across bridge of nose and cheekbones, youthful warm flush',
+  '清冷冷茶唇': 'cool-toned muted milk-tea nude lip glaze, subtle velvet finish',
+  '烟熏小猫眼': 'subtle smudged smoky feline winged eyeliner, sultry feline gaze',
+  '微汗水光肌': 'dewy glassy skin complexion with subtle natural micro-perspiration sheen',
+  '雀斑野性妆': 'delicate constellation of natural sun-freckles across nose bridge, raw untamed beauty',
+  '通透冷白皮': 'translucent porcelain fair skin tone with cool undertones and visible delicate micro-veins',
+  '细微绒毛感': 'delicate peach fuzz vellus hair softly glowing in rim light along jaw and cheekbones',
+  '水珠冷冽滑落': 'crisp cold water droplets beading and gliding down bare skin, tactile realism',
+  '健康小麦光泽': 'radiant sun-kissed golden wheat skin tone with healthy luminous sheen',
+  '锐利侧逆光': 'crisp sharp rim backlight combined with subtle side fill, defining razor-sharp contours',
+  '雪地高光': 'high-key bright ambient bounce light from pristine white snow, filling shadows softly',
+  '高反差硬光': 'high-contrast hard sunlight, razor-sharp shadow edges and sculpted bodily depth',
+  '微光低照度': 'moody low-key available light, deep atmospheric shadows with subtle specular highlights',
   // 创作基调与风格主题 (12大黄金摄影企划)
   '日系清透写真': 'Japanese airy candid photography, soft natural illumination, delicate film grain, pastel gentle tones',
   '韩系极简氛围': 'Korean editorial studio portraiture, clean dewy skin glow, sophisticated minimalism, refined tonal harmony',
@@ -83,7 +157,7 @@ function assembleChinesePrompt(selections, optionsMap) {
   const parts = [];
 
   // 1. 创作基调与人物身份 (Identity)
-  const theme = selections['theme'] || '日系清透写真';
+  const theme = selections['theme'] || '现代纯欲写真';
   const tension = selections['tension'] || '成熟优雅';
   const framing = selections['framing'] || '七分身';
   const ar = selections['aspect_ratio'] || '16:10';
@@ -112,7 +186,7 @@ function assembleChinesePrompt(selections, optionsMap) {
     faceDesc = faceFeatures.length > 0 ? `五官生动协调，眉眼间展现出${faceFeatures.join('、')}` : '';
   }
 
-  let identityDesc = `【画面风格与主角】这是一幅呈现「${theme}」的专业级女性摄影作品，画幅为「${ar}」，景别为「${framing}」，整体氛围流露着「${tension}」的审美张力。出镜女性约${age}，${ancestry}面貌特征，骨相呈${bone || '精致立体骨骼'}，脸部为协调的${faceShape}。${faceDesc}。底层核心严格遵循真实人类原生皮肤光学特征：细腻原生微毛孔与次表面散射（subsurface scattering），真实的微观肌理起伏与${skinTone}健康透润血色，保留${skinChar}真实生理细节，彻底杜绝塑料磨皮假面或瓷娃娃感，散发自然鲜活的原生微光。`;
+  let identityDesc = `一幅呈现「${theme}」的高级女性人像写真摄影作品，画幅为「${ar}」，景别为「${framing}」，整体氛围流露着「${tension}」的视觉吸引力。出镜女性约${age}，${ancestry}面貌特征，骨相呈${bone || '精致立体骨骼'}，脸部为协调的${faceShape}。${faceDesc}。真实细腻的原生皮肤质感，微孔与次表面微光自然通透，健康透润的${skinTone}血色，保留${skinChar}真实生理细节，彻底杜绝塑料磨皮假面或瓷娃娃感，散发自然鲜活的原生微光。`;
   parts.push(identityDesc);
 
   // 2. 身材形体解剖与比例 (Body - 全维度注入)
@@ -152,7 +226,7 @@ function assembleChinesePrompt(selections, optionsMap) {
   if (legs) bodyDetails.push(`双腿${legs}`);
 
   if (bodyDetails.length > 0) {
-    parts.push(`【身材形体】整体比例表现为：${bodyDetails.join('，')}。骨骼走势与软组织转折均严谨符合人体解剖美学与自然受力下垂重力逻辑，体态舒展修长。`);
+    parts.push(`身材比例匀称动人：${bodyDetails.join('，')}，呈现优美流畅的曼妙S曲线与优雅体态，身段舒展修长。`);
   }
 
   // 3. 发妆与穿搭服饰 (Styling & Outfit - 细节全覆盖)
@@ -222,7 +296,7 @@ function assembleChinesePrompt(selections, optionsMap) {
   if (outerwear && outerwear !== '无外搭') {
     let outerTags = [outerColor, outerFabric, outerFit, outerLen, outerwear].filter(Boolean).join(' ');
     let outerDesc = `外搭重点呈现一件设计感${outerTags}`;
-    if (outerWearStyle) outerDesc += `，以「${outerWearStyle}」的松弛姿态穿着，衣摆与轮廓在画面中占据大面积主导视觉`;
+    if (outerWearStyle) outerDesc += `，以「${outerWearStyle}」的松弛姿态穿着，与内搭形成强烈的视觉层次反差，半褪衣摆在风中随性摇曳，若隐若现展露内搭曼妙曲线`;
     extraOutfit.push(outerDesc);
   }
   if (socks && socks !== '无袜') extraOutfit.push(`配以${socks}`);
@@ -232,7 +306,7 @@ function assembleChinesePrompt(selections, optionsMap) {
   let accessDesc = (accessories && accessories !== '无配饰') ? `，佩戴有${accessories}` : '';
   let extraDesc = extraOutfit.length > 0 ? `；${extraOutfit.join('，')}` : '';
 
-  let stylingBlock = `【妆造服饰】发型梳理为富有空气感的${hairDesc}，妆容为${makeup}${accessDesc}。服装形式为「${outfitMode}」，${clothingDesc}${extraDesc}。面料微观织物纹理分明，受姿势牵引产生的褶皱与垂坠感真实可触。`;
+  let stylingBlock = `发型梳理为富有空气感的${hairDesc}，妆容为${makeup}${accessDesc}。${clothingDesc}${extraDesc}。面料微观织物纹理分明，受姿势牵引产生的褶皱与垂坠感真实可触。`;
   parts.push(stylingBlock);
 
   // 4. 动作姿态与情绪表达 (Pose - 支点/朝向/四肢全部注入)
@@ -245,12 +319,19 @@ function assembleChinesePrompt(selections, optionsMap) {
   const gaze = selections['gaze'] || '直视镜头';
   const emotion = selections['emotion'] || '自信冷静';
 
-  let poseDesc = `【动态与情绪】模特处于${posture}状态，躯干呈${bodyDir}${support ? '，以' + support + '为关键受力支点' : ''}；双手${hands}${legAction ? '，双腿呈' + legAction : ''}；头部${headDir || '自然端正'}，眼神${gaze}，眉宇与嘴角间流露出饱满的${emotion}情绪张力，动态连贯具戏剧感。`;
+  let poseDesc = `她处于${posture}状态，躯干呈${bodyDir}${support ? '，以' + support + '为依靠支点' : ''}；双手${hands}${legAction ? '，双腿呈' + legAction : ''}；头部${headDir || '自然端正'}，眼神${gaze}，眉宇与嘴角间流露出饱满的${emotion}神态张力。`;
   parts.push(poseDesc);
 
   // 5. 空间场景与环境光影 (Space - 地点/天气/空间关系/道具全覆盖)
-  const spaceType = selections['space_type'] || '室内';
   const location = selections['location'] || '极简现代公寓';
+  let spaceType = selections['space_type'];
+  if (!spaceType) {
+    const OUTDOOR_LIST = ['庭院', '露台', '城市街道', '车站', '停车场', '海岸', '泳池', '湖岸', '山路', '草原', '花园', '海滨沙滩', '林荫道', '公园草坪', '礁石海边', '天台', '斑马线', '公路边', '极寒雪山', '冰川雪原', '荒野戈壁', '孤岛礁石', '荒凉公路', '工业天台', '无边泳池', '露天私人温汤', '极寒露天雪地', '天台无边泳池', '都市夜景露台', '海边落日沙滩', '游艇甲板日光'];
+    const STUDIO_LIST = ['黑棚', '白棚', '彩色棚'];
+    if (OUTDOOR_LIST.includes(location)) spaceType = '室外';
+    else if (STUDIO_LIST.includes(location)) spaceType = '摄影棚';
+    else spaceType = '室内';
+  }
   const spaceStyle = selections['space_style'] || '';
   const weather = selections['time_weather'] || '午后阳光';
   const envRelation = selections['environment_relation'] || '';
@@ -262,7 +343,7 @@ function assembleChinesePrompt(selections, optionsMap) {
   if (envRelation) envDetails.push(`人物与环境${envRelation}`);
   if (props && props !== '无道具') envDetails.push(`现场陈列道具含${props}`);
 
-  let envBlock = `【场景与光影】置身于${spaceType}的${location}（${weather}）中${envDetails.length > 0 ? '，' + envDetails.join('，') : ''}。主照明光源为「${lighting}」，高光细腻微泛，暗部保留通透层次，光影明暗交界线柔和过渡，环境空间纵深感极佳。`;
+  let envBlock = `置身于${spaceType}的${location}（${weather}）中${envDetails.length > 0 ? '，' + envDetails.join('，') : ''}。主照明光源为「${lighting}」，高光细腻微泛，暗部保留通透层次，光影明暗交界线柔和过渡，环境空间纵深感极佳。`;
   parts.push(envBlock);
 
   // 6. 摄影器材、构图与光学质感 (Camera - 高度/角度/焦段/成色/附加要求)
@@ -279,7 +360,7 @@ function assembleChinesePrompt(selections, optionsMap) {
   camDetails.push(`运用${composition}`);
   camDetails.push(`成像色彩风格为「${imaging}」`);
 
-  let camBlock = `【摄影器材与成片质感】${camDetails.join('，')}。光学焦外散景如奶油般化开，焦点内发丝、睫毛与织物纤维极致锐利通透，色彩反差自然，极具《Vogue》高端摄影特辑品质。${notes ? '【附加专属指令】：' + notes : ''}`;
+  let camBlock = `采用${camDetails.join('，')}。光学焦外散景如奶油般柔美化开，焦点内发丝、睫毛与织物纤维极致锐利通透，色彩反差自然，大师级光影构图与电影质感。${notes ? '（' + notes + '）' : ''}`;
   parts.push(camBlock);
 
   return parts.join('\n\n');
@@ -295,8 +376,9 @@ function assembleEnglishPrompt(selections) {
 
   const tags = [
     'masterpiece',
-    'award-winning professional photography',
-    'hyper-detailed cinematic portrait of a beautiful adult woman',
+    'award-winning glamour portrait photography',
+    'sensual tension',
+    'hyper-detailed cinematic portrait of an alluring adult woman',
     'shot on Hasselblad H6D-100c',
     'medium format camera',
     'sharp focus',
@@ -334,7 +416,7 @@ function assembleEnglishPrompt(selections) {
   
   // 核心微观皮肤光学表征：细腻原生毛孔、次表面散射、自然微瑕，坚决杜绝塑料磨皮
   const skinChar = selections['skin_character'] ? toEnSafe(selections['skin_character']) : 'authentic skin physiology';
-  tags.push(`authentic human physiological skin texture, visible microscopic pores, delicate vellus peach fuzz in rim light, soft translucent subsurface scattering (SSS), natural skin translucency, ${skinChar}, zero plastic doll smoothing, zero airbrushed CGI artifacts, raw optical medium-format capture`);
+  tags.push(`authentic human physiological skin texture, visible microscopic pores, delicate vellus peach fuzz in rim light, soft translucent subsurface scattering (SSS), natural skin translucency, dewy perspiration sheen, ${skinChar}, zero plastic doll smoothing, zero airbrushed CGI artifacts, raw optical medium-format capture`);
 
   // 3. 身材比例
   if (selections['figure']) tags.push(toEnSafe(selections['figure']));
@@ -420,7 +502,7 @@ function assembleEnglishPrompt(selections) {
       toEnSafe(selections['outerwear_wear'])
     ].filter(Boolean);
     if (outerParts.length > 0) {
-      tags.push(`prominent outerwear layering: wearing ${outerParts.join(', ')}, dominating visual silhouette with tactile fabric drape`);
+      tags.push(`prominent outerwear layering: wearing ${outerParts.join(', ')}, draped casually open to reveal the delicate innerwear and waistline beneath with dynamic teasing contrast`);
     }
   }
 
@@ -550,8 +632,17 @@ function checkOptionConflict(fieldId, optionValue, currentSelections) {
   }
 
   // 2. 空间分类与场景地点互斥 (Space Type & Location)
-  const INDOOR_LOCATIONS = ['现代公寓', '极简现代公寓', '厨房', '书房', '卧室', '剧院后台', '走廊', '咖啡馆', '图书馆', '健身空间', '舞蹈空间', '酒店', '工业空间'];
-  const OUTDOOR_LOCATIONS = ['庭院', '露台', '城市街道', '车站', '停车场', '海岸', '泳池', '湖岸', '山路', '草原', '花园', '海滨沙滩', '林荫道', '公园草坪', '礁石海边', '天台', '斑马线', '公路边'];
+  const INDOOR_LOCATIONS = [
+    '现代公寓', '极简现代公寓', '厨房', '书房', '卧室', '剧院后台', '走廊',
+    '咖啡馆', '图书馆', '健身空间', '舞蹈空间', '酒店', '工业空间',
+    '暗调车库', '复古酒吧', '美术展厅'
+  ];
+  const OUTDOOR_LOCATIONS = [
+    '庭院', '露台', '城市街道', '车站', '停车场', '海岸', '泳池', '湖岸',
+    '山路', '草原', '花园', '海滨沙滩', '林荫道', '公园草坪', '礁石海边',
+    '天台', '斑马线', '公路边',
+    '极寒雪山', '冰川雪原', '荒野戈壁', '孤岛礁石', '荒凉公路', '工业天台', '无边泳池'
+  ];
   const STUDIO_LOCATIONS = ['黑棚', '白棚', '彩色棚'];
 
   if (fieldId === 'location') {
@@ -580,10 +671,10 @@ function checkOptionConflict(fieldId, optionValue, currentSelections) {
   }
 
   // 3. 时间天气与光影照明互斥 (Time/Weather & Lighting)
-  const DAYLIGHT_LIGHTS = ['午后硬光', '午后阳光'];
-  const NIGHT_WEATHERS = ['夜晚'];
-  const OVERCAST_WEATHERS = ['暴雨', '阴天', '雪天'];
-  const DAYLIGHT_WEATHERS = ['清晨', '午后', '晴天'];
+  const DAYLIGHT_LIGHTS = ['午后硬光', '午后阳光', '高反差硬光'];
+  const NIGHT_WEATHERS = ['夜晚', '雨夜反光'];
+  const OVERCAST_WEATHERS = ['暴雨', '阴天', '雪天', '风雪呼啸'];
+  const DAYLIGHT_WEATHERS = ['清晨', '午后', '晴天', '极地晴空', '薄雾清晨', '黄金时刻'];
 
   if (fieldId === 'lighting') {
     const tw = currentSelections['time_weather'];
@@ -611,7 +702,11 @@ function checkOptionConflict(fieldId, optionValue, currentSelections) {
   }
 
   // 4. 体态姿势与受力支点互斥 (Posture & Support)
-  const STANDING_POSTURES = ['自然站立', '单腿承重', '交叉腿站', '迈步', '回身', '旋转舞姿', '低姿态运动', '动态跳跃'];
+  const STANDING_POSTURES = [
+    '自然站立', '单腿承重', '交叉腿站', '迈步', '回身', '侧身倚靠',
+    '前倾扶台', '背身扶台', '单手撑墙', '双手撑椅背', '旋转舞姿',
+    '低姿态运动', '动态跳跃', '挺拔傲立', '仰头凝视', '单手撩发', '双手环抱'
+  ];
   const LYING_POSTURES = ['仰卧', '侧卧', '俯卧', '蜷缩侧卧', '躺椅半卧'];
   const KNEELING_POSTURES = ['跪坐', '双膝跪姿', '单膝跪姿', '跪姿前倾'];
   const SITTING_POSTURES = ['坐姿前倾', '反坐椅子', '侧坐', '端坐', '盘腿坐', '坐台沿'];
@@ -704,8 +799,33 @@ function directorCoordinateMatch(fieldsList, currentSelections, lockedFields, is
   const newSelections = sampleOptionsRandomly(fieldsList, currentSelections, lockedFields, isFieldActiveFn);
 
   // 美学微调联动逻辑（在未锁定时做协调）
+  const OUTDOOR_LIST = ['庭院', '露台', '城市街道', '车站', '停车场', '海岸', '泳池', '湖岸', '山路', '草原', '花园', '海滨沙滩', '林荫道', '公园草坪', '礁石海边', '天台', '斑马线', '公路边', '极寒雪山', '冰川雪原', '荒野戈壁', '孤岛礁石', '荒凉公路', '工业天台', '无边泳池'];
+  const INDOOR_LIST = ['现代公寓', '极简现代公寓', '厨房', '书房', '卧室', '剧院后台', '走廊', '咖啡馆', '图书馆', '健身空间', '舞蹈空间', '酒店', '工业空间', '暗调车库', '复古酒吧', '美术展厅'];
+  const STUDIO_LIST = ['黑棚', '白棚', '彩色棚'];
+
+  // 空间类型智能自适应
+  if ((!lockedFields || !lockedFields['space_type']) && newSelections['location']) {
+    if (OUTDOOR_LIST.includes(newSelections['location'])) {
+      newSelections['space_type'] = '室外';
+    } else if (INDOOR_LIST.includes(newSelections['location'])) {
+      newSelections['space_type'] = '室内';
+    } else if (STUDIO_LIST.includes(newSelections['location'])) {
+      newSelections['space_type'] = '摄影棚';
+    }
+  }
+
+  // 极地雪山反差场景协调
+  if ((newSelections['location'] === '极寒雪山' || newSelections['location'] === '冰川雪原')) {
+    if (!lockedFields || !lockedFields['time_weather']) {
+      newSelections['time_weather'] = Math.random() > 0.5 ? '风雪呼啸' : '极地晴空';
+    }
+    if (!lockedFields || !lockedFields['lighting']) {
+      newSelections['lighting'] = Math.random() > 0.5 ? '锐利侧逆光' : '雪地高光';
+    }
+  }
+
   if (newSelections['theme'] === '泳装写真' && (!lockedFields || !lockedFields['location'])) {
-    newSelections['location'] = '海岸沙滩';
+    newSelections['location'] = '海岸';
   }
   if (newSelections['theme'] === '电影叙事' && (!lockedFields || !lockedFields['imaging'])) {
     newSelections['imaging'] = '胶片电影质感';

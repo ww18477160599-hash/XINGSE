@@ -18,7 +18,7 @@
         </svg>
       </div>
       <div class="brand-title">形色 XINGSE</div>
-      <div class="brand-badge" id="app-version-badge">Studio Pro v0.7.5</div>
+      <div class="brand-badge" id="app-version-badge">Studio Pro v0.7.7</div>
     </div>
 
     <!-- 顶部状态摘要与主题切换栏 (取代旧版杂乱大按钮) -->
@@ -125,6 +125,42 @@
         </div>
       </div>
 
+      <!-- 选项库全局即时搜索与反差速选栏 -->
+            <!-- 全局写真企划工作台：灵感配方、反差碰撞与纯欲张力控制台 -->
+      <div class="glamour-presets-panel" id="glamour-presets-panel">
+        
+        <!-- 顶层工具栏：检索 + 张力档位旋钮 + 反差碰撞盲盒 -->
+        <div class="presets-toolbar-row">
+          <div class="options-search-input-wrap">
+            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="options-search-input" class="options-search-input" placeholder="🔍 快速检索 85 维选项库 (如: 雪山、比基尼、露脐、黑丝、85mm)..." autocomplete="off" spellcheck="false" />
+            <button class="options-search-clear" id="btn-options-search-clear" style="display:none;" title="清空搜索">✕</button>
+          </div>
+
+          <!-- 纯欲张力档位调节器 (Tension Dial) -->
+          <div class="tension-dial-group" id="tension-dial-group" title="调节视觉表现强度 (L1清新日常 ~ L4极限张力)，明确与整体风格搭配互补">
+            <span class="tension-dial-label">🔥 视觉强度:</span>
+            <div class="tension-pills">
+              <button type="button" class="tension-pill" data-level="1" title="Level 1: 清爽自然，生活感随性写真">L1 清新</button>
+              <button type="button" class="tension-pill" data-level="2" title="Level 2: 轻熟都市，强调名媛气质与高级剪裁">L2 轻熟</button>
+              <button type="button" class="tension-pill active" data-level="3" title="Level 3: 纯欲私房，微露微醺与松弛感">L3 纯欲</button>
+              <button type="button" class="tension-pill" data-level="4" title="Level 4: 极限张力，绝妙反差与饱满曼妙身段">L4 极张</button>
+            </div>
+          </div>
+
+          <!-- ⚡ 随机反差碰撞盲盒 (Spark Contrast Roll) -->
+          <button type="button" class="btn-contrast-roll" id="btn-contrast-roll" title="🎲 随机摇出两项视觉冲突极强的反差组合 (如：极寒雪山x比基尼、机车皮衣x蕾丝睡衣)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>⚡ 反差碰撞</span>
+          </button>
+        </div>
+
+        <!-- 实时搜索匹配结果列表 (搜索时展开) -->
+        <div class="options-search-results" id="options-search-results" style="display:none;"></div>
+
+
+      </div>
+
       <!-- 动态卡片注入容器 -->
       <div class="console-cards-container" id="console-cards-container"></div>
     </section>
@@ -145,6 +181,27 @@
 
       <!-- Tab 1: 提示词生成面板 (主审阅区域，宽敞舒适) -->
       <div class="ws-content" id="panel-prompt">
+        <!-- ✨ 现代美女写真 · 一键黄金套系配方 (Formula Capsules) -->
+        <div class="panel-block formula-capsules-section" id="formula-capsules-section">
+          <div class="formula-section-header">
+            <div class="formula-header-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+              <span>黄金套系爆款配方</span>
+              <span class="formula-header-hint">（点击一键装配场景、穿搭、姿态并同步提示词）</span>
+            </div>
+            <div class="formula-header-actions">
+              <span id="formula-active-indicator" class="formula-active-indicator" style="display:none;"></span>
+              <button type="button" class="btn-formula-toggle" id="btn-formula-toggle" title="收起或展开配方卡片">
+                <span id="formula-toggle-text">收起</span>
+                <svg id="formula-toggle-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="formula-capsules-grid" id="formula-capsules-grid">
+            <!-- 8 个精心调校的现代美女写真爆款套系卡片由 JS 动态渲染 -->
+          </div>
+        </div>
         <!-- 企划标题与画幅规格信息条 -->
         <div class="panel-block prompt-header-bar">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
@@ -178,6 +235,10 @@
                 <button type="button" class="lang-pill active" id="lang-btn-zh" data-lang="zh" title="由AI摄影导演以原生中文专业摄影词汇撰写方案">中文</button>
                 <button type="button" class="lang-pill" id="lang-btn-en" data-lang="en" title="由AI摄影导演以原生英文专业摄影词汇撰写（专为 FLUX / Midjourney / SD 等原生英系模型定制）">English</button>
               </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-undo-prompt" style="padding:2px 8px; font-size:0.74rem; display:none;" title="恢复上一次提示词方案（防止误改或配方误覆盖）">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                <span>撤销恢复</span>
+              </button>
               <span id="prompt-char-count" style="font-size:0.75rem; color:var(--text-muted);">0 字</span>
             </div>
           </div>

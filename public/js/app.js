@@ -6,6 +6,7 @@
 const state = {
   groups: [],
   fieldsMap: {},
+  fieldGroupMap: {},
   allFields: [],
   selections: {},
   locks: {},
@@ -21,7 +22,8 @@ const state = {
   galleryFilterAlbum: 'all',
   gallerySort: 'time-desc',
   gallerySearchQuery: '',
-  favorites: JSON.parse(localStorage.getItem('xingse_favorites') || '[]')
+  favorites: JSON.parse(localStorage.getItem('xingse_favorites') || '[]'),
+  promptUndoStack: [] // 提示词历史回退栈 (记录用户编辑与自动生成前的版本快照)
 };
 
 // 常见 LLM 预设供应商
@@ -144,10 +146,13 @@ const IMAGE_PRESETS = {
   },
   custom: {
     baseUrl: 'https://api.gemai.cc/v1',
-    model: 'gpt-image-2.5-low',
-    name: '哈基米 / GemAI (gpt-image / Midjourney)',
+    model: 'gpt-image-2-low',
+    name: '哈基米 / GemAI (GPT-Image / Midjourney)',
     models: [
-      { id: 'gpt-image-2.5-low', name: 'gpt-image-2.5-low (哈基米极速出图)' },
+      { id: 'gpt-image-2-low', name: 'gpt-image-2-low (推荐·低延时稳定出图)' },
+      { id: 'gpt-image-2.5-sunburst', name: 'gpt-image-2.5-sunburst (高画质晴空版)' },
+      { id: 'gpt-image-2', name: 'gpt-image-2 (GPT-Image 经典标准版)' },
+      { id: 'gpt-image-2.5-low', name: 'gpt-image-2.5-low (极速通道)' },
       { id: 'midjourney', name: 'midjourney (中转代理出图)' }
     ]
   }
@@ -230,11 +235,13 @@ async function initApp() {
     const data = await ApiService.fetchOptions();
     state.groups = data.groups || [];
 
-    // 扁平化字段字典
+    // 扁平化字段字典与组名快速索引
+    state.fieldGroupMap = {};
     state.groups.forEach(g => {
       g.fields.forEach(f => {
         state.fieldsMap[f.id] = f;
         state.allFields.push(f);
+        state.fieldGroupMap[f.id] = g.name;
       });
     });
 
@@ -270,6 +277,8 @@ async function initApp() {
     }
     updatePromptBoxStatus();
     updateStatusSummary();
+    initOptionsGlobalSearch();
+    initGlamourStudio();
 
     // 5. 加载历史画廊
     loadGallery();
@@ -437,6 +446,563 @@ function createSubDivider(id, icon, title, badgeText) {
   `;
   return div;
 }
+
+
+// ========================================================
+// 摄影企划黄金套系配方库 (覆盖现代时尚、纯欲私房、新中式国风、复古胶片等多元流派)
+// ========================================================
+const FORMULA_PRESETS = [
+  {
+    id: 'formula_urban_glam',
+    icon: '🍸',
+    title: '都市微醺名媛',
+    badge: '现代轻奢',
+    desc: '落地窗夜景倒影，松垮西装搭配丝缎深V与开叉长裙，抚腰侧展微醺迷离',
+    locks: {
+      theme: '现代时尚',
+      location: '现代落地窗边',
+      outfit_mode: '上下装',
+      outerwear: '松垮落肩西装',
+      outerwear_wear: '敞开衣襟迎风',
+      upper_kind: '丝缎深V内衣',
+      lower_kind: '高开叉长半裙',
+      footwear: '一字带细高跟',
+      posture: '抚腰侧展曲线',
+      emotion: '纯欲微醺迷离',
+      lighting: '落地窗逆光影'
+    }
+  },
+  {
+    id: 'formula_oriental_qipao',
+    icon: '🎋',
+    title: '新中式清冷旗袍',
+    badge: '东方雅韵',
+    desc: '清冷出尘的新中式美学，高开叉修身旗袍搭配冷茶唇，侧身倚靠流露含蓄高级张力',
+    locks: {
+      theme: '新中式清冷',
+      outfit_mode: '连衣裙',
+      onepiece_kind: '高开叉旗袍',
+      makeup: '清冷冷茶唇',
+      posture: '侧身倚靠',
+      emotion: '清冷禁欲诱惑',
+      lighting: '侧光'
+    }
+  },
+  {
+    id: 'formula_snow_bikini',
+    icon: '❄️',
+    title: '极寒雪山反差',
+    badge: '极致反差',
+    desc: '极寒露天雪地，蓬松仿皮草大衣半褪，内搭挂脖修身背心与水珠滑落质感',
+    locks: {
+      theme: '现代时尚',
+      location: '极寒露天雪地',
+      outfit_mode: '上下装',
+      outerwear: '蓬松仿皮草',
+      outerwear_wear: '单侧滑落露肩',
+      upper_kind: '修身挂脖背心',
+      lower_kind: '蕾丝系带底裤',
+      posture: '倚墙挺胸侧立',
+      emotion: '清冷禁欲诱惑',
+      skin_character: '水珠冷冽滑落'
+    }
+  },
+  {
+    id: 'formula_boyfriend_shirt',
+    icon: '👔',
+    title: '男友风下衣失踪',
+    badge: '纯欲私房',
+    desc: '晨光穿透浴室百叶，宽大男友白衬衫微遮，下装随性抱膝赤足，轻咬下唇娇媚',
+    locks: {
+      theme: '现代时尚',
+      location: '阳光浴室浴缸',
+      outfit_mode: '上下装',
+      outerwear: '男友大号衬衫',
+      outerwear_wear: '敞开衣襟迎风',
+      upper_kind: '镂空露背背心',
+      lower_kind: '紧绷瑜伽短裤',
+      footwear: '赤足',
+      posture: '屈膝收腿抱膝',
+      emotion: '轻咬下唇娇媚',
+      lighting: '百叶斑驳暖光'
+    }
+  },
+  {
+    id: 'formula_infinity_pool',
+    icon: '💧',
+    title: '天台无边泳池',
+    badge: '水光湿身',
+    desc: '天台高空无边泳池边，薄纱开衫搭配连体修身泳衣，湿发贴颈撩拨与微喘直视',
+    locks: {
+      theme: '现代时尚',
+      location: '天台无边泳池',
+      outfit_mode: '连体装',
+      outerwear: '透光薄纱开衫',
+      onepiece_kind: '连体修身泳衣',
+      footwear: '赤足',
+      posture: '湿发贴颈撩拨',
+      emotion: '微喘含情直视',
+      skin_character: '湿身半透贴肤',
+      lighting: '勾勒胴体轮廓'
+    }
+  },
+  {
+    id: 'formula_black_silk_queen',
+    icon: '🖤',
+    title: '黑丝冷艳御姐',
+    badge: '高级气场',
+    desc: '都市夜景露台微光，廓形西装下搭抹胸与超短皮裙，透肉黑丝细高跟',
+    locks: {
+      theme: '现代时尚',
+      location: '都市夜景露台',
+      outfit_mode: '上下装',
+      outerwear: '廓形西装',
+      upper_kind: '抹胸紧身胸衣',
+      lower_kind: '超短A字皮裙',
+      socks: '透肉黑丝连裤',
+      footwear: '一字带细高跟',
+      posture: '撑台微倾回眸',
+      emotion: '冷漠厌世挑衅',
+      lighting: '微光低照度'
+    }
+  },
+  {
+    id: 'formula_peach_private',
+    icon: '🧘‍♀️',
+    title: '纯欲蜜桃私房',
+    badge: '身段曲线',
+    desc: '私密健身房柔和侧逆光，紧身露脐短T搭配蜜桃臀瑜伽裤，猫式伸展柔韧身段',
+    locks: {
+      theme: '现代时尚',
+      location: '私人健身房内',
+      outfit_mode: '上下装',
+      upper_kind: '紧身露脐短T',
+      lower_kind: '蜜桃臀瑜伽裤',
+      socks: '纯欲透白长袜',
+      posture: '弓背猫式伸展',
+      emotion: '欲拒还迎含羞',
+      skin_character: '微汗泛着细光',
+      lighting: '柔和侧逆光线'
+    }
+  },
+  {
+    id: 'formula_hongkong_vintage',
+    icon: '🎞️',
+    title: '港风复古胶片',
+    badge: '经典电影',
+    desc: '复古酒吧冷暖双色光影，真丝吊带裙配浓郁复古红唇，侧倚吧台微醺沉醉',
+    locks: {
+      theme: '港风复古胶片',
+      location: '复古酒吧',
+      outfit_mode: '连衣裙',
+      onepiece_kind: '真丝吊带裙',
+      makeup: '复古红唇',
+      posture: '侧身倚靠',
+      emotion: '纯欲微醺迷离',
+      lighting: '冷暖双色'
+    }
+  }
+];
+
+// 随机视觉反差碰撞组合（横跨不同风格，打破套路）
+const CONTRAST_CLASH_PRESETS = [
+  {
+    name: '极寒雪地 ✕ 丝缎深V',
+    locks: {
+      location: '极寒露天雪地',
+      outerwear: '蓬松仿皮草',
+      upper_kind: '丝缎深V内衣',
+      skin_character: '水珠冷冽滑落',
+      emotion: '清冷禁欲诱惑'
+    }
+  },
+  {
+    name: '天台泳池 ✕ 廓形西装',
+    locks: {
+      location: '天台无边泳池',
+      outerwear: '松垮落肩西装',
+      onepiece_kind: '连体修身泳衣',
+      outfit_mode: '连体装',
+      skin_character: '湿身半透贴肤'
+    }
+  },
+  {
+    name: '中式旗袍 ✕ 清冷禁欲',
+    locks: {
+      theme: '新中式清冷',
+      onepiece_kind: '高开叉旗袍',
+      makeup: '清冷冷茶唇',
+      emotion: '清冷禁欲诱惑'
+    }
+  },
+  {
+    name: '晨光浴室 ✕ 男友衬衫',
+    locks: {
+      location: '阳光浴室浴缸',
+      outerwear: '男友大号衬衫',
+      lower_kind: '蕾丝系带底裤',
+      posture: '屈膝收腿抱膝',
+      emotion: '轻咬下唇娇媚'
+    }
+  },
+  {
+    name: '都市夜景 ✕ 绝美透肉黑丝',
+    locks: {
+      location: '都市夜景露台',
+      socks: '透肉黑丝连裤',
+      upper_kind: '抹胸紧身胸衣',
+      lower_kind: '超短A字皮裙',
+      footwear: '一字带细高跟'
+    }
+  },
+  {
+    name: '港风胶片 ✕ 真丝微醺',
+    locks: {
+      theme: '港风复古胶片',
+      location: '复古酒吧',
+      onepiece_kind: '真丝吊带裙',
+      makeup: '复古红唇',
+      emotion: '迷离失神微醺'
+    }
+  },
+  {
+    name: '健身私房 ✕ 猫式蜜桃伸展',
+    locks: {
+      location: '私人健身房内',
+      upper_kind: '紧身露脐短T',
+      lower_kind: '蜜桃臀瑜伽裤',
+      posture: '弓背猫式伸展',
+      skin_character: '微汗泛着细光'
+    }
+  },
+  {
+    name: '街头机车 ✕ 蕾丝抹胸反差',
+    locks: {
+      location: '时尚咖啡卡座',
+      outerwear: '机车硬朗皮衣',
+      upper_kind: '一字领紧身针',
+      lower_kind: '低腰牛仔短裤',
+      posture: '手指勾扯腰带'
+    }
+  }
+];
+
+// 全局即时选项搜索逻辑
+function initOptionsGlobalSearch() {
+  const searchInput = document.getElementById('options-search-input');
+  const clearBtn = document.getElementById('btn-options-search-clear');
+  const resultsContainer = document.getElementById('options-search-results');
+
+  if (!searchInput || !resultsContainer) return;
+
+  function performOptionsSearch(query) {
+    const q = (query || '').trim().toLowerCase();
+    if (!q) {
+      if (clearBtn) clearBtn.style.display = 'none';
+      resultsContainer.style.display = 'none';
+      resultsContainer.innerHTML = '';
+      return;
+    }
+
+    if (clearBtn) clearBtn.style.display = 'inline-block';
+    resultsContainer.style.display = 'flex';
+    resultsContainer.innerHTML = '';
+
+    const matches = [];
+    state.allFields.forEach(field => {
+      const groupName = state.fieldGroupMap[field.id] || '其他';
+      const allOpts = [...(field.options || []), ...(field.customOptions || [])];
+      const fieldMatches = field.name.toLowerCase().includes(q) || field.id.toLowerCase().includes(q);
+
+      allOpts.forEach(opt => {
+        if (opt.toLowerCase().includes(q) || fieldMatches) {
+          const isSelected = isOptionSelected(field.id, opt, field.type);
+          matches.push({ field, groupName, option: opt, isSelected });
+        }
+      });
+    });
+
+    if (matches.length === 0) {
+      resultsContainer.innerHTML = `
+        <div style="font-size:0.78rem; color:var(--text-muted); text-align:center; padding:12px;">
+          未检索到包含「<span style="color:var(--accent-gold);">${escapeHtml(q)}</span>」的选项。您可在对应字段中点击「+自建选项」自由扩充！
+        </div>
+      `;
+      return;
+    }
+
+    const header = document.createElement('div');
+    header.className = 'search-results-header';
+    header.innerHTML = `
+      <span>共检索到 <strong>${matches.length}</strong> 个选项 (点击直接秒级锁定/切换):</span>
+      <button class="btn btn-secondary btn-sm" id="btn-close-search-results" style="padding:2px 8px; font-size:0.72rem;">收起结果</button>
+    `;
+    resultsContainer.appendChild(header);
+
+    header.querySelector('#btn-close-search-results').addEventListener('click', () => {
+      searchInput.value = '';
+      performOptionsSearch('');
+    });
+
+    const grid = document.createElement('div');
+    grid.className = 'search-results-grid';
+
+    matches.slice(0, 80).forEach(item => {
+      const chip = document.createElement('div');
+      chip.className = `search-result-chip ${item.isSelected ? 'is-selected' : ''}`;
+      chip.innerHTML = `
+        <div class="search-result-chip-info" title="[${item.groupName} · ${item.field.name}] ${item.option}">
+          <span class="search-result-group-tag">${item.field.name}</span>
+          <span class="search-result-name">${escapeHtml(item.option)}</span>
+          ${item.isSelected ? '<span style="color:var(--accent-gold); font-weight:bold; margin-left:2px;">✓</span>' : ''}
+        </div>
+        <button class="search-result-locate-btn" title="滚动定位到该字段卡片">📍</button>
+      `;
+
+      chip.addEventListener('click', (e) => {
+        if (e.target.classList.contains('search-result-locate-btn')) return;
+        toggleOptionSelect(item.field, item.option);
+        performOptionsSearch(searchInput.value);
+      });
+
+      const locateBtn = chip.querySelector('.search-result-locate-btn');
+      locateBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const group = state.groups.find(g => g.fields.some(f => f.id === item.field.id));
+        if (group && state.activeGroup !== 'all' && state.activeGroup !== group.id) {
+          switchActiveGroup(group.id);
+        }
+        const targetTile = document.getElementById(`field-card-${item.field.id}`);
+        if (targetTile) {
+          targetTile.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          targetTile.classList.remove('pulse-highlight');
+          void targetTile.offsetWidth;
+          targetTile.classList.add('pulse-highlight');
+          setTimeout(() => targetTile.classList.remove('pulse-highlight'), 1600);
+        }
+      });
+
+      grid.appendChild(chip);
+    });
+
+    resultsContainer.appendChild(grid);
+  }
+
+  let searchTimer = null;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      performOptionsSearch(e.target.value);
+    }, 120);
+  });
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      searchInput.value = '';
+      performOptionsSearch('');
+    }
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      performOptionsSearch('');
+      searchInput.focus();
+    });
+  }
+}
+
+// 初始化写真企划配方库、反差碰撞与纯欲张力旋钮
+function initGlamourStudio() {
+  // 1. 初始化张力档位
+  state.tensionLevel = localStorage.getItem('xingse_tension_level') || '3';
+  const dialGroup = document.getElementById('tension-dial-group');
+  if (dialGroup) {
+    const pills = dialGroup.querySelectorAll('.tension-pill');
+    pills.forEach(pill => {
+      if (pill.dataset.level === state.tensionLevel) {
+        pill.classList.add('active');
+      } else {
+        pill.classList.remove('active');
+      }
+
+      pill.addEventListener('click', () => {
+        state.tensionLevel = pill.dataset.level;
+        localStorage.setItem('xingse_tension_level', state.tensionLevel);
+        pills.forEach(p => p.classList.toggle('active', p === pill));
+        
+        const levelNames = { 
+          '1': 'L1 清新写意 (日常素雅自然)', 
+          '2': 'L2 轻熟都市 (内敛高级质感)', 
+          '3': 'L3 纯欲微醺 (默认·迷人姿态故事感)', 
+          '4': 'L4 极限张力 (饱满体态反差冲击)' 
+        };
+        showToast(`已调节视觉表现强度为【${levelNames[state.tensionLevel] || state.tensionLevel}】`, 'info');
+      });
+    });
+  }
+
+  // 2. ⚡ 反差碰撞盲盒
+  const rollBtn = document.getElementById('btn-contrast-roll');
+  if (rollBtn) {
+    rollBtn.addEventListener('click', () => {
+      const clash = CONTRAST_CLASH_PRESETS[Math.floor(Math.random() * CONTRAST_CLASH_PRESETS.length)];
+      if (!clash) return;
+
+      Object.entries(clash.locks).forEach(([fid, val]) => {
+        state.selections[fid] = val;
+        state.locks[fid] = true;
+      });
+
+      syncAndRefreshAll(Object.keys(clash.locks));
+
+      showToast(`⚡ 反差碰撞盲盒命中：【${clash.name}】！已一键锁定核心视觉锚点！`, 'success');
+    });
+  }
+
+  // 3. 渲染摄影企划黄金套系配方卡片 (支持收起/展开，点击即时同步提示词与锁池)
+  const grid = document.getElementById('formula-capsules-grid');
+  const toggleBtn = document.getElementById('btn-formula-toggle');
+  const formulaSection = document.getElementById('formula-capsules-section');
+  const toggleText = document.getElementById('formula-toggle-text');
+
+  // 初始化收起/展开记忆
+  if (toggleBtn && formulaSection) {
+    const isCollapsed = localStorage.getItem('xingse_formula_collapsed') === '1';
+    if (isCollapsed) {
+      formulaSection.classList.add('is-collapsed');
+      if (toggleText) toggleText.textContent = '展开';
+    }
+
+    if (!toggleBtn.dataset.bound) {
+      toggleBtn.dataset.bound = 'true';
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        formulaSection.classList.toggle('is-collapsed');
+        const nowCollapsed = formulaSection.classList.contains('is-collapsed');
+        if (toggleText) toggleText.textContent = nowCollapsed ? '展开' : '收起';
+        localStorage.setItem('xingse_formula_collapsed', nowCollapsed ? '1' : '0');
+      });
+    }
+  }
+
+  // 记录最近装配的套系键，防止跨套系锁残留污染
+  let lastFormulaKeys = [];
+
+  if (grid) {
+    grid.innerHTML = '';
+    FORMULA_PRESETS.forEach(formula => {
+      const card = document.createElement('div');
+      card.className = 'formula-card';
+      card.id = `formula-card-${formula.id}`;
+      card.innerHTML = `
+        <div class="formula-card-top">
+          <div class="formula-card-title-wrap">
+            <span class="formula-card-icon">${formula.icon}</span>
+            <span class="formula-card-title">${escapeHtml(formula.title)}</span>
+          </div>
+          <span class="formula-card-badge" id="formula-badge-${formula.id}">${formula.badge}</span>
+        </div>
+        <div class="formula-card-desc" title="${escapeHtml(formula.desc)}">${escapeHtml(formula.desc)}</div>
+      `;
+
+      card.addEventListener('click', () => {
+        const isCurrentlyActive = checkFormulaActive(formula);
+        if (isCurrentlyActive) {
+          // 再次点击取消装配
+          Object.keys(formula.locks).forEach(fid => {
+            delete state.locks[fid];
+            refreshFieldCardChips(fid);
+            refreshFieldCardLockState(fid);
+          });
+          lastFormulaKeys = [];
+          showToast(`已解除【${formula.title}】的装配`, 'info');
+        } else {
+          // 清理之前套系的专属锁，防止字段残留交叉污染
+          if (lastFormulaKeys.length > 0) {
+            lastFormulaKeys.forEach(fid => {
+              if (!formula.locks[fid]) {
+                delete state.locks[fid];
+                refreshFieldCardChips(fid);
+                refreshFieldCardLockState(fid);
+              }
+            });
+          }
+
+          // 在应用新配方前，先自动为用户拍摄提示词快照，确保误触可一键撤销
+          pushPromptSnapshot(`应用配方【${formula.title}】`);
+
+          // 注入当前套系锁与选中值
+          Object.entries(formula.locks).forEach(([fid, val]) => {
+            state.selections[fid] = val;
+            state.locks[fid] = true;
+            refreshFieldCardChips(fid);
+            refreshFieldCardLockState(fid);
+          });
+          lastFormulaKeys = Object.keys(formula.locks);
+
+          // 自动同步企划标题并清除用户自定标记
+          const titleInput = document.getElementById('project-title');
+          if (titleInput) {
+            titleInput.value = `《${formula.title}·${Date.now().toString().slice(-4)}》`;
+            delete titleInput.dataset.userEdited;
+          }
+
+          showToast(`已装配【${formula.title}】！已为您保存上一版本，需要时可随时点上方「撤销恢复」`, 'success');
+        }
+
+        syncAndRefreshAll(lastFormulaKeys.length > 0 ? lastFormulaKeys : Object.keys(formula.locks), { syncPromptBox: true });
+      });
+
+      grid.appendChild(card);
+    });
+
+    updateFormulaCardsActive();
+  }
+}
+
+// 检查某配方是否全部命中
+function checkFormulaActive(formula) {
+  if (!formula || !formula.locks) return false;
+  return Object.entries(formula.locks).every(([fid, val]) => {
+    return state.selections[fid] === val && state.locks[fid] === true;
+  });
+}
+
+// 刷新配方卡片的激活外观与文字徽章
+function updateFormulaCardsActive() {
+  let activeFormula = null;
+  FORMULA_PRESETS.forEach(formula => {
+    const card = document.getElementById(`formula-card-${formula.id}`);
+    const badge = document.getElementById(`formula-badge-${formula.id}`);
+    const isActive = checkFormulaActive(formula);
+    if (isActive) activeFormula = formula;
+    if (card) {
+      card.classList.toggle('active', isActive);
+    }
+    if (badge) {
+      if (isActive) {
+        badge.textContent = '✓ 已装配';
+        badge.classList.add('badge-active');
+      } else {
+        badge.textContent = formula.badge;
+        badge.classList.remove('badge-active');
+      }
+    }
+  });
+
+  const indicator = document.getElementById('formula-active-indicator');
+  if (indicator) {
+    if (activeFormula) {
+      indicator.style.display = 'inline-flex';
+      indicator.innerHTML = `<span>已装配: ${activeFormula.icon} ${escapeHtml(activeFormula.title)}</span>`;
+    } else {
+      indicator.style.display = 'none';
+      indicator.innerHTML = '';
+    }
+  }
+}
+window.updateFormulaCardsActive = updateFormulaCardsActive;
 
 // 控制台全量字段渲染 (超紧凑 3~4 列多列网格矩阵)
 function renderConsole() {
@@ -706,6 +1272,28 @@ function isOptionSelected(fieldId, optName, type) {
   return current === optName;
 }
 
+// 统一状态同步与界面刷新全家桶 (彻底消除各操作函数末尾冗余的8~10行重复调用)
+function syncAndRefreshAll(changedFieldIds = [], options = {}) {
+  const ids = Array.isArray(changedFieldIds) ? changedFieldIds : (changedFieldIds ? [changedFieldIds] : []);
+  ids.forEach(fid => {
+    refreshFieldCardChips(fid);
+    refreshFieldCardLockState(fid);
+  });
+  updateActiveConditionals();
+  renderLockPool();
+  updateAspectRatioDisplay();
+  if (options.checkPrompt !== false) {
+    checkPromptOutdated();
+  }
+  if (options.syncPromptBox === true) {
+    updatePromptBoxFromCurrentSelections();
+  }
+  updateStatusSummary();
+  updateSidebarBadges();
+  saveSelectionsToLocal();
+  updateFormulaCardsActive();
+}
+
 // 用户主动选择选项 (选即加入锁定池机制)
 function toggleOptionSelect(field, optName) {
   if (field.type === 'single') {
@@ -732,15 +1320,7 @@ function toggleOptionSelect(field, optName) {
     }
   }
 
-  refreshFieldCardChips(field.id);
-  refreshFieldCardLockState(field.id);
-  updateActiveConditionals();
-  renderLockPool();
-  updateAspectRatioDisplay();
-  checkPromptOutdated();
-  updateStatusSummary();
-  updateSidebarBadges();
-  saveSelectionsToLocal();
+  syncAndRefreshAll(field.id);
 }
 
 // 刷新指定胶囊磁贴内文字
@@ -788,6 +1368,7 @@ function toggleFieldLock(fieldId) {
   checkPromptOutdated();
   updateStatusSummary();
   saveSelectionsToLocal();
+  if (typeof updateFormulaCardsActive === 'function') updateFormulaCardsActive();
 }
 
 // 单项随机抽取 (抽中后不自动锁定！保持已有锁逻辑)
@@ -800,30 +1381,14 @@ function randomizeField(fieldId) {
   const rand = allOptions[Math.floor(Math.random() * allOptions.length)];
   state.selections[fieldId] = rand;
   // 严格要求：随机抽取的结果不自动加入锁定池
-  refreshFieldCardChips(fieldId);
-  refreshFieldCardLockState(fieldId);
-  updateActiveConditionals();
-  renderLockPool();
-  updateAspectRatioDisplay();
-  checkPromptOutdated();
-  updateStatusSummary();
-  updateSidebarBadges();
-  saveSelectionsToLocal();
+  syncAndRefreshAll(fieldId);
 }
 
 // 清空单项 (同时移出锁定池)
 function clearField(fieldId) {
   delete state.selections[fieldId];
   delete state.locks[fieldId];
-  refreshFieldCardChips(fieldId);
-  refreshFieldCardLockState(fieldId);
-  updateActiveConditionals();
-  renderLockPool();
-  updateAspectRatioDisplay();
-  checkPromptOutdated();
-  updateStatusSummary();
-  updateSidebarBadges();
-  saveSelectionsToLocal();
+  syncAndRefreshAll(fieldId);
 }
 
 // 联动激活逻辑：上下装 vs 一体装
@@ -909,13 +1474,7 @@ function renderLockPool() {
     const field = state.fieldsMap[fieldId];
     if (!field) return;
 
-    let groupName = '参数';
-    for (const g of state.groups) {
-      if (g.fields.some(f => f.id === fieldId)) {
-        groupName = g.name;
-        break;
-      }
-    }
+    const groupName = state.fieldGroupMap[fieldId] || '参数';
 
     const val = state.selections[fieldId];
     const isActive = isFieldPartitionActive(fieldId);
@@ -939,6 +1498,7 @@ function renderLockPool() {
       checkPromptOutdated();
       updateStatusSummary();
       saveSelectionsToLocal();
+  if (typeof updateFormulaCardsActive === 'function') updateFormulaCardsActive();
       showToast(`已解除「${groupName}·${field.name}」的锁定`, 'info');
     });
 
@@ -969,6 +1529,71 @@ function checkPromptOutdated() {
   }
 }
 
+// 提示词快照保存与撤销系统 (保护用户编辑与自动生成前的版本)
+function pushPromptSnapshot(reason = '操作') {
+  const mainPromptBox = document.getElementById('main-prompt-box');
+  const titleInput = document.getElementById('project-title');
+  if (!mainPromptBox) return;
+
+  const currentText = mainPromptBox.value;
+  const currentTitle = titleInput ? titleInput.value : '';
+
+  // 若与栈顶内容一致则不重复压栈
+  const lastSnap = state.promptUndoStack[state.promptUndoStack.length - 1];
+  if (lastSnap && lastSnap.text === currentText && lastSnap.title === currentTitle) {
+    return;
+  }
+
+  // 只保留最近 20 次快照
+  state.promptUndoStack.push({
+    text: currentText,
+    title: currentTitle,
+    reason: reason,
+    timestamp: Date.now()
+  });
+
+  if (state.promptUndoStack.length > 20) {
+    state.promptUndoStack.shift();
+  }
+
+  updatePromptUndoButtonState();
+}
+
+// 恢复上一次快照
+function popPromptSnapshot() {
+  if (!state.promptUndoStack || state.promptUndoStack.length === 0) {
+    showToast('暂无历史版本可恢复', 'info');
+    return;
+  }
+
+  const mainPromptBox = document.getElementById('main-prompt-box');
+  const titleInput = document.getElementById('project-title');
+  const snap = state.promptUndoStack.pop();
+
+  if (mainPromptBox && snap) {
+    mainPromptBox.value = snap.text;
+    if (titleInput && snap.title) {
+      titleInput.value = snap.title;
+    }
+    updatePromptBoxStatus();
+    updatePromptUndoButtonState();
+    showToast(`✓ 已撤销并恢复至【${snap.reason}】前的版本`, 'success');
+  }
+}
+
+// 更新撤销按钮显示状态
+function updatePromptUndoButtonState() {
+  const undoBtn = document.getElementById('btn-undo-prompt');
+  if (!undoBtn) return;
+  if (state.promptUndoStack && state.promptUndoStack.length > 0) {
+    undoBtn.style.display = 'inline-flex';
+    const lastSnap = state.promptUndoStack[state.promptUndoStack.length - 1];
+    undoBtn.title = `恢复至: ${lastSnap.reason} (${new Date(lastSnap.timestamp).toLocaleTimeString()})`;
+  } else {
+    undoBtn.style.display = 'none';
+  }
+}
+
 // 更新提示词文本框字数与生图按钮可点击状态
 function updatePromptBoxStatus() {
   const mainPromptBox = document.getElementById('main-prompt-box');
@@ -988,6 +1613,8 @@ function updatePromptBoxStatus() {
       genBtn.disabled = true;
     }
   }
+
+  updatePromptUndoButtonState();
 }
 
 // 更新顶部监控状态条与锁定总览
@@ -1055,15 +1682,22 @@ function updatePromptBoxFromCurrentSelections() {
 
   const lang = state.promptLanguage || 'zh';
   let prompt = '';
+  const isCustomTitle = titleInput && titleInput.dataset.autoGenerated === 'false' && titleInput.value.trim() !== '';
   if (lang === 'en') {
     prompt = XingSeDirector.assembleEnglishPrompt(state.selections);
-    if (titleInput && (!titleInput.value || /[\u4e00-\u9fa5]/.test(titleInput.value))) {
-      titleInput.value = `Cinematic Portrait ${Date.now().toString().slice(-4)}`;
+    if (titleInput && !isCustomTitle) {
+      if (!titleInput.value || /[\u4e00-\u9fa5]/.test(titleInput.value)) {
+        titleInput.value = `Cinematic Portrait ${Date.now().toString().slice(-4)}`;
+        titleInput.dataset.autoGenerated = 'true';
+      }
     }
   } else {
     prompt = XingSeDirector.assembleChinesePrompt(state.selections, state.fieldsMap);
-    if (titleInput && (!titleInput.value || !/[\u4e00-\u9fa5]/.test(titleInput.value))) {
-      titleInput.value = generateCreativeTitle(state.selections, '');
+    if (titleInput && !isCustomTitle) {
+      if (!titleInput.value || !/[\u4e00-\u9fa5]/.test(titleInput.value)) {
+        titleInput.value = generateCreativeTitle(state.selections, '');
+        titleInput.dataset.autoGenerated = 'true';
+      }
     }
   }
 
@@ -1077,11 +1711,7 @@ function updatePromptBoxFromCurrentSelections() {
 // 顶栏全部解锁 (清空锁定池)
 function unlockAllFields() {
   state.locks = {};
-  state.allFields.forEach(f => refreshFieldCardLockState(f.id));
-  renderLockPool();
-  checkPromptOutdated();
-  updateStatusSummary();
-  saveSelectionsToLocal();
+  syncAndRefreshAll(state.allFields.map(f => f.id));
   showToast('已清空全部锁定，当前所有维度均可由 AI 自由搭配', 'info');
 }
 
@@ -1089,16 +1719,7 @@ function unlockAllFields() {
 function resetConsole() {
   state.selections = {};
   state.locks = {};
-  state.allFields.forEach(f => {
-    refreshFieldCardChips(f.id);
-    refreshFieldCardLockState(f.id);
-  });
-  updateActiveConditionals();
-  renderLockPool();
-  updateAspectRatioDisplay();
-  updateStatusSummary();
-  updateSidebarBadges();
-  saveSelectionsToLocal();
+  syncAndRefreshAll(state.allFields.map(f => f.id));
   showToast('控制台已重置清空', 'warning');
 }
 
@@ -1107,20 +1728,13 @@ function resetGroup(groupId) {
   const group = state.groups.find(g => g.id === groupId);
   if (!group) return;
 
-  group.fields.forEach(f => {
-    delete state.selections[f.id];
-    delete state.locks[f.id];
-    refreshFieldCardChips(f.id);
-    refreshFieldCardLockState(f.id);
+  const fids = group.fields.map(f => f.id);
+  fids.forEach(fid => {
+    delete state.selections[fid];
+    delete state.locks[fid];
   });
 
-  updateActiveConditionals();
-  renderLockPool();
-  updateAspectRatioDisplay();
-  checkPromptOutdated();
-  updateStatusSummary();
-  updateSidebarBadges();
-  saveSelectionsToLocal();
+  syncAndRefreshAll(fids);
   showToast(`已重置「${group.name}」`, 'info');
 }
 
@@ -1133,17 +1747,7 @@ function runRandomSample() {
     isFieldPartitionActive
   );
 
-  state.allFields.forEach(f => {
-    refreshFieldCardChips(f.id);
-    refreshFieldCardLockState(f.id);
-  });
-  updateActiveConditionals();
-  renderLockPool();
-  updateAspectRatioDisplay();
-  checkPromptOutdated();
-  updateStatusSummary();
-  updateSidebarBadges();
-  saveSelectionsToLocal();
+  syncAndRefreshAll(state.allFields.map(f => f.id));
   showToast('已重抽未锁定的生效维度（用户锁定项完好保留，抽取结果未加入锁定池）', 'success');
 }
 
@@ -1192,6 +1796,7 @@ async function handleAddCustomOptionSubmit() {
       // 自动选中并加入锁定池
       toggleOptionSelect(field, val);
       saveSelectionsToLocal();
+  if (typeof updateFormulaCardsActive === 'function') updateFormulaCardsActive();
     }
 
     closeModal('add-custom-modal');
@@ -1218,6 +1823,7 @@ async function handleDeleteCustomOption(fieldId, optName) {
       renderLockPool();
       updateStatusSummary();
       saveSelectionsToLocal();
+  if (typeof updateFormulaCardsActive === 'function') updateFormulaCardsActive();
     }
     showToast(`已删除自定义选项「${optName}」`, 'info');
   } catch (err) {
@@ -1393,32 +1999,6 @@ function updateQuickModelSelect() {
   const activeProvider = state.settings?.imageGen?.provider || 'dashscope';
   const activeModel = state.settings?.imageGen?.model || 'qwen-image-3.0';
 
-  // 常见生图平台预设可选模型字典（按平台归类）
-  const presetModelMap = {
-    dashscope: [
-      { id: 'qwen-image-3.0', name: '阿里云百炼 · Qwen-Image-3.0 (官方推荐)' },
-      { id: 'qwen-image-3.0-pro', name: '阿里云百炼 · Qwen-Image-3.0-pro 旗舰' },
-      { id: 'wanx2.1-t2i-turbo', name: '阿里云百炼 · 万相 2.1 极速版' },
-      { id: 'wanx2.1-t2i-plus', name: '阿里云百炼 · 万相 2.1 旗舰版' }
-    ],
-    siliconflow: [
-      { id: 'black-forest-labs/FLUX.1-schnell', name: '硅基流动 · FLUX.1-schnell 极速' },
-      { id: 'black-forest-labs/FLUX.1-dev', name: '硅基流动 · FLUX.1-dev 画质旗舰' },
-      { id: 'stabilityai/stable-diffusion-3-5-large', name: '硅基流动 · SD 3.5 Large' }
-    ],
-    zhipu: [
-      { id: 'cogview-3-plus', name: '智谱 AI · CogView-3-Plus 旗舰' },
-      { id: 'cogview-3-flash', name: '智谱 AI · CogView-3-Flash 极速' }
-    ],
-    openai: [
-      { id: 'dall-e-3', name: 'OpenAI · DALL-E 3 官方' }
-    ],
-    custom: [
-      { id: 'gpt-image-2.5-low', name: '哈基米 · gpt-image-2.5-low (常用)' },
-      { id: 'midjourney', name: '哈基米 · midjourney' }
-    ]
-  };
-
   // 1. 严格过滤：只保留用户已配置 API Key 的平台，绝不展示未配置或待配Key的死选项
   const allKnownProviders = ['dashscope', 'siliconflow', 'zhipu', 'openai', 'custom'];
   const configuredProviders = allKnownProviders.filter(p => isImageProviderConfigured(p));
@@ -1438,7 +2018,13 @@ function updateQuickModelSelect() {
   configuredProviders.forEach(p => {
     const prof = state.settings?.imageGen?.providers?.[p] || {};
     const pName = IMAGE_PRESETS[p]?.name?.split(' ')?.[0] || p;
-    const models = presetModelMap[p] ? [...presetModelMap[p]] : [];
+    const models = (IMAGE_PRESETS[p]?.models || []).map(m => {
+      const cleanName = m.name || m.id;
+      return {
+        id: m.id,
+        name: cleanName.includes(pName) ? cleanName : `${pName} · ${cleanName}`
+      };
+    });
 
     // 若用户自定义了模型且不在预设中，加入到该平台模型列表首位
     if (prof.model && !models.some(m => m.id === prof.model)) {
@@ -1733,18 +2319,17 @@ async function handleAiDirectorMatch() {
     matchBtnTop.innerHTML = '<span>🎬 搭配中...</span>';
   }
 
+  // 搭配生成新方案前压入撤销快照，防止冲掉已有手写方案
+  if (mainPromptBox && mainPromptBox.value.trim()) {
+    pushPromptSnapshot('AI导演重新搭配');
+  }
+
   // 1. 严格整理仅当前生效的锁定池条件 (带 [分组名·字段名]＝值)
   const lockedItems = [];
   state.allFields.forEach(f => {
     const val = state.selections[f.id];
     if (val && state.locks[f.id] && isFieldPartitionActive(f.id)) {
-      let gName = '参数';
-      for (const g of state.groups) {
-        if (g.fields.some(field => field.id === f.id)) {
-          gName = g.name;
-          break;
-        }
-      }
+      const gName = state.fieldGroupMap[f.id] || '参数';
       lockedItems.push(`- 【${gName}·${f.name}】＝ ${val}`);
     }
   });
@@ -1761,10 +2346,18 @@ async function handleAiDirectorMatch() {
 
   if (lang === 'en') {
     if (lockedItems.length > 0) {
-      promptText = `[User Mandatory Locked Anchors (Absolute constraints - you must 100% strictly preserve, incorporate and highlight in the scene)]:\n${lockedItems.join('\n')}\n\n`;
+      promptText = `[User Mandatory Locked Anchors (Absolute golden constraints - you must 100% strictly preserve, incorporate and highlight in the scene)]:\n${lockedItems.join('\n')}\n\n`;
     } else {
-      promptText = `No specific attributes are currently locked. As an internationally acclaimed fashion photography director, freely curate an aesthetically sophisticated, deeply atmospheric, and masterfully lit adult female portrait photography proposal.\n\n`;
+      promptText = `No specific attributes are currently locked. As an elite Master Director of Visual Portraiture, freely compose an aesthetically stunning, deeply evocative, and masterfully lit fine-art portrait photography proposal.\n\n`;
     }
+
+    promptText += `[CREATIVE DIRECTIVE & AESTHETIC GUIDELINES]:
+Craft an evocative, highly atmospheric prompt optimized for image diffusion models, seamlessly adapting to the chosen theme (whether modern, oriental, vintage, or avant-garde):
+1. Focus on anatomical rhythm and expressive physical grace (natural poise, sculpted curves, shoulder and clavicle lines);
+2. Wardrobe dynamic interplay and tactile texture (layering contrast, drape, fabric tension, and expressive wear);
+3. Authentic optical fidelity (prime lens shallow depth of field, delicate skin translucency, soft catchlights, micro-textures);
+4. Emotional depth and captivating eye contact (storytelling gaze with palpable presence);
+5. Strictly adhere to all locked user constraints, while freely exercising artistic mastery across unlocked dimensions.\n\n`;
 
     if (currentTitle) {
       promptText += `[Perspective & Title Variation Directive]:\nThe previous collection title was "${currentTitle}". In this new rendition, please compose fresh lighting atmospheres and spatial depth while strictly adhering to all locked anchors, and invent an original, poetic, non-repetitive English collection title (DO NOT reuse "${currentTitle}")!\n\n`;
@@ -1779,8 +2372,32 @@ async function handleAiDirectorMatch() {
     if (lockedItems.length > 0) {
       promptText = `【用户指定的硬性核心要求（已锁定锚点，你必须100%严格保留贯彻并在画面中重点呈现）】：\n${lockedItems.join('\n')}\n\n`;
     } else {
-      promptText = `用户当前未锁定任何具体维度，请你作为国际顶级时尚摄影导演，自由搭配一套极具美感张力、摄影光影极佳的成片方案。\n\n`;
+      promptText = `用户当前未锁定任何具体维度，请你作为国际顶级视觉人像与摄影艺术企划导演，自由构思一套极具画面表现力与摄影光影美感的成片企划方案。\n\n`;
     }
+
+    const tensionDescriptionsZh = {
+      '1': '【当前张力氛围：L1 清新自然】侧重生活写实与通透微风，质朴自然，松弛写意。',
+      '2': '【当前张力氛围：L2 轻熟优雅】侧重高级优雅气质与精致剪裁，展现体态轮廓与从容气场。',
+      '3': '【当前张力氛围：L3 纯欲微醺 (默认)】侧重纯欲与微醺松弛感，捕捉身段曲线、肩颈微露与含情眼神，兼具故事感与吸引力。',
+      '4': '【当前张力氛围：L4 强烈张力】拉满视觉张力与体态冲击力，重度呈现曼妙身段起伏、穿搭反差拉扯与摄人心魄的神态。'
+    };
+    const currentTensionZh = tensionDescriptionsZh[state.tensionLevel || '3'] || tensionDescriptionsZh['3'];
+
+    promptText += `【张力调控引导】：\n${currentTensionZh}\n\n`;
+    promptText += `【创作导向与美学诉求】：
+请根据用户上述锁定的维度与整体意图进行高水准的摄影企划（题材不设限，以现代都市女性、私房纯欲、优雅时尚为主，自适应契合画面主题）：
+1. 聚焦人物的形体韵律与视觉吸引力（自然曼妙的身段线条、舒展的体态、优美肩颈与体态起伏）；
+2. 呈现服饰的质感与层次反差（如真丝吊带、微透蕾丝、滑落外套、随性衣物线条）；
+3. 雕刻真实生动的微观光影与肌肤质感（顶级定焦大光圈浅景深，通透细腻的皮肤光泽与微光漫反射）；
+4. 捕捉富有情绪张力的神态与眼神互动（故事感拉满，微醺慵懒，直视镜头）；
+5. 严格保留用户所有已锁定的要求，未锁定的维度自由搭配最协调、惊艳的成片方案！\n\n`;
+
+    promptText += `【特别指令：一切为生图模型出图服务，严禁文字自嗨】：
+你生成的提示词将被直接喂给生图模型（如 GPT-Image / DALL-E / FLUX），而不是供人类阅读的企划案！
+1. 坚决严禁输出编号清单（如①②③④、1. 2. 3.、一二三四）！
+2. 坚决严禁拆分小标题（如【骨相】、【身材】、【穿搭】、【受力分析】、【光影】）！
+3. 坚决严禁抽象理论与自嗨分析（如“我们精心设计了...”、“受力支点分析”、“展现极致肉体张力”）！
+4. 纯正单段落地：将女性魅力、曼妙曲线、吸睛服饰面料、撩人神态姿态、环境光影与顶级85mm镜头质感，熔铸成一段自然连贯、极富视觉冲击力与画面感的纯正摄影描述段落！\n\n`;
 
     if (currentTitle) {
       promptText += `【重新搭配命名与视角指令】：\n当前画面的旧片名为《${currentTitle}》。本次点击「重新搭配」，请在保留所有锁定条件的前提下，设计不同的光影空间与视觉意境，并且必须重新拟定一个意境高雅、绝不重复的全新作品片名（严禁再次命名为《${currentTitle}》）！\n\n`;
@@ -1821,6 +2438,15 @@ async function handleAiDirectorMatch() {
 
         if (!generatedPrompt && content) {
           generatedPrompt = content.replace(/^#+ [^\n]+\n/g, '').replace(/【作品企划标题】[^\n]*\n?/g, '').replace(/\[Project Title\][^\n]*\n?/g, '').trim();
+        }
+
+        // 清理可能残存的自嗨式小标题与序号，确保下游生图模型接收纯正视觉提示词
+        if (generatedPrompt) {
+          generatedPrompt = generatedPrompt.replace(/^[①②③④⑤⑥⑦⑧⑨⑩\d\.\s、\-*#]+【[^】]+】[：:\s]*/gm, '')
+            .replace(/^【[^】]+】[：:\s]*/gm, '')
+            .replace(/^\[[^\]]+\][：:\s]*/gm, '')
+            .replace(/^(?:在这幅(?:摄影)?作品中|在本次企划中|作为摄影导演[，,]?|我们精心设计了?)[，,:\s]*/g, '')
+            .trim();
         }
       }
 
@@ -1898,6 +2524,9 @@ async function handleAiOptimizePrompt() {
     optBtn.disabled = true;
     optBtn.innerHTML = '<span>✨ 优化中...</span>';
   }
+
+  // 优化前压入撤销栈
+  pushPromptSnapshot('智能优化提示词');
 
   const lockedItems = [];
   state.allFields.forEach(f => {
@@ -2640,6 +3269,7 @@ function restoreItemToConsole(item) {
   updateStatusSummary();
   updateSidebarBadges();
   saveSelectionsToLocal();
+  if (typeof updateFormulaCardsActive === 'function') updateFormulaCardsActive();
   if (warningBanner) warningBanner.style.display = 'none';
   updatePromptBoxStatus();
 
@@ -2748,6 +3378,9 @@ function bindGlobalEvents() {
   document.getElementById('btn-ai-optimize-prompt')?.addEventListener('click', handleAiOptimizePrompt);
   document.getElementById('btn-random-sample-studio')?.addEventListener('click', runRandomSample);
 
+  // 提示词撤销恢复按钮事件绑定
+  document.getElementById('btn-undo-prompt')?.addEventListener('click', popPromptSnapshot);
+
   document.getElementById('btn-copy-prompt')?.addEventListener('click', () => {
     const text = document.getElementById('main-prompt-box')?.value;
     if (text) {
@@ -2758,13 +3391,14 @@ function bindGlobalEvents() {
 
   document.getElementById('btn-clear-prompt')?.addEventListener('click', () => {
     const box = document.getElementById('main-prompt-box');
-    if (box) {
+    if (box && box.value.trim()) {
+      pushPromptSnapshot('清空提示词');
       box.value = '';
       try { localStorage.removeItem('xingse_draft_prompt'); } catch (_) {}
       updatePromptBoxStatus();
       const warningBanner = document.getElementById('prompt-outdated-warning');
       if (warningBanner) warningBanner.style.display = 'none';
-      showToast('提示词已清空', 'info');
+      showToast('提示词已清空（可点上方「撤销恢复」找回）', 'info');
     }
   });
 
@@ -2949,7 +3583,7 @@ function bindGlobalEvents() {
 
   // 标题输入框修改后标记为用户自定义
   document.getElementById('project-title')?.addEventListener('input', (e) => {
-    e.target.dataset.autoGenerated = 'false';
+    e.target.dataset.autoGenerated = e.target.value.trim() ? 'false' : 'true';
   });
 
   // 画布工具条与打开文件夹
@@ -3104,6 +3738,7 @@ function bindGlobalEvents() {
     updateStatusSummary();
     updateSidebarBadges();
     saveSelectionsToLocal();
+  if (typeof updateFormulaCardsActive === 'function') updateFormulaCardsActive();
     switchWorkspaceTab('prompt');
     handleAiDirectorMatch();
   });
