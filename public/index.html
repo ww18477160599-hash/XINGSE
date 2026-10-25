@@ -18,7 +18,7 @@
         </svg>
       </div>
       <div class="brand-title">形色 XINGSE</div>
-      <div class="brand-badge" id="app-version-badge">Studio Pro v0.7.7</div>
+      <div class="brand-badge" id="app-version-badge">Studio Pro v0.7.9</div>
     </div>
 
     <!-- 顶部状态摘要与主题切换栏 (取代旧版杂乱大按钮) -->
@@ -395,7 +395,10 @@
           </div>
 
           <div class="form-group" style="margin-bottom:10px;">
-            <label class="form-label">API Key</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <label class="form-label" style="margin:0;">API Key</label>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-llm-key" title="清除当前供应商平台的 API Key" style="padding:2px 8px; font-size:0.72rem; line-height:1.2;">清除凭证</button>
+            </div>
             <input type="password" class="form-control" id="llm-api-key" placeholder="sk-..." />
           </div>
 
@@ -451,7 +454,10 @@
           </div>
 
           <div class="form-group" style="margin-bottom:10px;">
-            <label class="form-label">API Key</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <label class="form-label" style="margin:0;">API Key</label>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-image-key" title="清除当前供应商平台的 API Key" style="padding:2px 8px; font-size:0.72rem; line-height:1.2;">清除凭证</button>
+            </div>
             <input type="password" class="form-control" id="image-api-key" placeholder="sk-..." />
           </div>
 

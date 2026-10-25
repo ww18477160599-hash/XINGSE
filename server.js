@@ -3,8 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-const PORT = 3721;
-const DATA_DIR = path.join(__dirname, 'data');
+const PORT = parseInt(process.env.PORT, 10) || 3721;
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 // 确保数据目录存在
@@ -51,17 +51,58 @@ initJsonFile(PRESETS_FILE, []);
 function readJson(file, fallback = {}) {
   try {
     if (fs.existsSync(file)) {
-      return JSON.parse(fs.readFileSync(file, 'utf8'));
+      const content = fs.readFileSync(file, 'utf8');
+      if (!content || !content.trim()) return fallback;
+      return JSON.parse(content);
     }
   } catch (err) {
     console.error(`Read JSON error for ${file}:`, err.message);
+    // 损坏留档保护，防止下一次写入静默抹除原文件
+    try {
+      const corruptBackup = `${file}.corrupt_${Date.now()}`;
+      fs.copyFileSync(file, corruptBackup);
+      console.warn(`Corrupt file backed up to: ${corruptBackup}`);
+    } catch (e) {}
   }
   return fallback;
 }
 
+// Windows 兼容的全量原子写入 (同目录临时文件 + 事务重命名替换，绝不使用非原子覆盖)
 function writeJson(file, data) {
   try {
-    fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+    const dir = path.dirname(file);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const randSuffix = Math.random().toString(36).slice(2);
+    const tmpFile = path.join(dir, `.${path.basename(file)}.${Date.now()}_${randSuffix}.tmp`);
+    const bakFile = path.join(dir, `.${path.basename(file)}.${Date.now()}_${randSuffix}.bak`);
+    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf8');
+
+    // 优先执行原子重命名
+    try {
+      fs.renameSync(tmpFile, file);
+    } catch (renameErr) {
+      // Windows 目标存在时的事务替换：先将目标重命名为 .bak，再把 tmp 重命名为目标
+      let backedUp = false;
+      try {
+        if (fs.existsSync(file)) {
+          fs.renameSync(file, bakFile);
+          backedUp = true;
+        }
+        fs.renameSync(tmpFile, file);
+        if (backedUp && fs.existsSync(bakFile)) {
+          try { fs.unlinkSync(bakFile); } catch (_) {}
+        }
+      } catch (atomicErr) {
+        // 事务失败时恢复旧文件
+        if (backedUp && fs.existsSync(bakFile)) {
+          try { fs.renameSync(bakFile, file); } catch (_) {}
+        }
+        try { if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile); } catch (_) {}
+        throw atomicErr;
+      }
+    }
     return true;
   } catch (err) {
     console.error(`Write JSON error for ${file}:`, err.message);
@@ -81,8 +122,8 @@ function isMaskedKey(key) {
 }
 
 // 自动还原真实 API Key: 若传入的是脱敏掩码，则从服务端持久化存储 settings.json 中安全提取真实 Key
-function resolveRealApiKey(inputKey, type, provider) {
-  const settings = readJson(SETTINGS_FILE, {});
+function resolveRealApiKey(inputKey, type, provider, customSettings) {
+  const settings = customSettings || readJson(SETTINGS_FILE, {});
   const section = settings[type];
 
   // 1. 若明确指定了 provider 且在该 provider 下配置了独立的真实 Key，绝对优先使用该渠道自身的有效 Key
@@ -99,20 +140,14 @@ function resolveRealApiKey(inputKey, type, provider) {
   }
   if (!section) return '';
 
-  // 3. 从该类型顶层全局配置提取有效 Key
+  // 3. 从该类型顶层全局配置提取有效 Key (仅当顶层当前激活的 provider 与请求目标一致时才允许回退)
   if (section.apiKey && !isMaskedKey(section.apiKey)) {
-    return section.apiKey.trim();
-  }
-
-  // 4. 兜底轮询各 providers 中的首个可用有效 Key
-  if (section.providers) {
-    for (const p in section.providers) {
-      const k = section.providers[p]?.apiKey;
-      if (k && !isMaskedKey(k)) {
-        return k.trim();
-      }
+    if (!provider || section.provider === provider) {
+      return section.apiKey.trim();
     }
   }
+
+  // 彻底移除跨 Provider 乱抓 Key 的逻辑，严禁将 A 平台的 Key 发送给 B 平台
   return '';
 }
 
@@ -402,25 +437,42 @@ const server = http.createServer(async (req, res) => {
   const reqUrl = new URL(req.url, `http://${reqHost}`);
   const pathname = reqUrl.pathname;
 
-  // 安全 CORS 支持 (仅允许本地域、127.0.0.1、localhost 及 Tauri 原生协议)
+  // 安全 CORS 支持 (严格仅允许本机回环与 Tauri 官方源)
   const origin = req.headers.origin;
-  if (!origin || origin.includes('127.0.0.1') || origin.includes('localhost') || origin.startsWith('tauri://')) {
+  const isAllowedOrigin = !origin ||
+    origin === 'http://127.0.0.1:3721' ||
+    origin === 'http://localhost:3721' ||
+    origin === 'tauri://localhost' ||
+    origin === 'http://tauri.localhost' ||
+    origin.startsWith('tauri://') ||
+    /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin);
+
+  if (isAllowedOrigin) {
     if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  } else {
-    // 拦截未经授权的非本地外部网页跨域探测
-    if (req.method === 'OPTIONS') {
-      res.writeHead(403);
-      res.end();
-      return;
-    }
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Xingse-Client');
   }
 
+  // 1. 优先处理预检 OPTIONS 请求
   if (req.method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
+    if (isAllowedOrigin) {
+      res.writeHead(204);
+      res.end();
+    } else {
+      res.writeHead(403);
+      res.end();
+    }
     return;
+  }
+
+  // 2. 防跨站攻击拦截 (所有写操作必须携带客户端认证头 X-Xingse-Client)
+  if (pathname.startsWith('/api/') && req.method !== 'GET') {
+    const clientHeader = req.headers['x-xingse-client'];
+    if (clientHeader !== '1') {
+      res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: '未经授权的外部或跨站调用 (缺少客户端安全凭证)' }));
+      return;
+    }
   }
 
   // API 路由分发
@@ -551,7 +603,11 @@ const server = http.createServer(async (req, res) => {
         const currentSettings = readJson(SETTINGS_FILE, {});
 
         function unmaskKey(newVal, oldVal) {
-          if (!newVal || typeof newVal !== 'string') return oldVal || '';
+          // 显式传入 null 表示明确清空该凭证
+          if (newVal === null) return '';
+          // 缺失或类型非 string 时保持原值
+          if (newVal === undefined || typeof newVal !== 'string') return oldVal || '';
+          // 掩码占位符保持原值，绝不覆盖
           if (isMaskedKey(newVal)) return oldVal || '';
           return newVal.trim();
         }
@@ -612,7 +668,11 @@ const server = http.createServer(async (req, res) => {
           }
         }
 
-        writeJson(SETTINGS_FILE, merged);
+        if (!writeJson(SETTINGS_FILE, merged)) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: '保存设置失败，磁盘写入受限' }));
+          return;
+        }
         res.writeHead(200);
         res.end(JSON.stringify({ success: true, message: 'Settings saved' }));
         return;
@@ -637,7 +697,11 @@ const server = http.createServer(async (req, res) => {
           locks: body.locks || {}
         };
         presets.unshift(newPreset);
-        writeJson(PRESETS_FILE, presets);
+        if (!writeJson(PRESETS_FILE, presets)) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: '保存预设失败，磁盘写入受限' }));
+          return;
+        }
         res.writeHead(200);
         res.end(JSON.stringify({ success: true, preset: newPreset }));
         return;
@@ -716,7 +780,11 @@ const server = http.createServer(async (req, res) => {
         };
         history.unshift(record);
         if (history.length > 100) history.pop(); // 保持最近100条
-        writeJson(HISTORY_FILE, history);
+        if (!writeJson(HISTORY_FILE, history)) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: '保存历史记录失败，磁盘写入受限' }));
+          return;
+        }
         res.writeHead(200);
         res.end(JSON.stringify({ success: true, record }));
         return;
@@ -746,19 +814,24 @@ const server = http.createServer(async (req, res) => {
         writeJson(HISTORY_FILE, history);
         res.writeHead(200);
         res.end(JSON.stringify({ success: true, count: history.length }));
+        return;
       }
 
       // 7.3 LLM 提示词生成服务 (支持中文/英文 原生摄影导演撰写，非机翻)
       if (pathname === '/api/llm/generate' && req.method === 'POST') {
         const body = await parseRequestBody(req);
         const { prompt, config, lang = 'zh' } = body;
-        const cfg = config || readJson(SETTINGS_FILE, {}).llm || {};
-        const baseUrl = (cfg.baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
-        const provider = cfg.provider || 'deepseek';
-        const apiKey = resolveRealApiKey(cfg.apiKey, 'llm', provider);
-        const model = cfg.model || 'deepseek-chat';
-        const temp = typeof cfg.temperature === 'number' ? cfg.temperature : 1;
-        let maxTokens = cfg.maxTokens || 4096;
+        const savedSettings = readJson(SETTINGS_FILE, {});
+        const savedLlm = savedSettings.llm || {};
+        const provider = config?.provider || savedLlm.provider || 'deepseek';
+        const savedProviderCfg = savedLlm.providers?.[provider] || {};
+        const defaultBaseUrl = provider === 'deepseek' ? 'https://api.deepseek.com' : (provider === 'siliconflow' ? 'https://api.siliconflow.cn/v1' : 'https://api.openai.com/v1');
+        // 安全核心：严格读取持久化档案中的 baseUrl，防止请求体注入攻击
+        const baseUrl = (savedProviderCfg.baseUrl || savedLlm.baseUrl || defaultBaseUrl).replace(/\/+$/, '');
+        const apiKey = resolveRealApiKey(config?.apiKey, 'llm', provider);
+        const model = config?.model || savedProviderCfg.model || savedLlm.model || 'deepseek-chat';
+        const temp = typeof config?.temperature === 'number' ? config.temperature : (savedLlm.temperature || 1);
+        let maxTokens = config?.maxTokens || savedLlm.maxTokens || 4096;
         if (model.includes('reasoner') || model.includes('r1')) {
           maxTokens = Math.max(maxTokens, 8192);
         } else {
@@ -884,9 +957,19 @@ Your sole objective is to convert user locks and style preferences into a single
       // 7.4 LLM 连通性测试
       if (pathname === '/api/llm/test' && req.method === 'POST') {
         const body = await parseRequestBody(req);
-        const { baseUrl, apiKey: rawApiKey, model, provider } = body;
-        const cleanBaseUrl = (baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
-        const apiKey = resolveRealApiKey(rawApiKey, 'llm', provider || 'deepseek');
+        const { baseUrl: reqBaseUrl, apiKey: rawApiKey, model, provider = 'deepseek' } = body;
+        const savedSettings = readJson(SETTINGS_FILE, {});
+        const savedProviderCfg = savedSettings.llm?.providers?.[provider] || {};
+        
+        // 安全策略：如果传的是脱敏掩码，必须严格采用服务端持久化保存的 baseUrl，严禁把真实 Key 打到未经验证的临时地址
+        let cleanBaseUrl = '';
+        if (isMaskedKey(rawApiKey)) {
+          cleanBaseUrl = (savedProviderCfg.baseUrl || savedSettings.llm?.baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
+        } else {
+          cleanBaseUrl = (reqBaseUrl || savedProviderCfg.baseUrl || savedSettings.llm?.baseUrl || 'https://api.deepseek.com').replace(/\/+$/, '');
+        }
+
+        const apiKey = resolveRealApiKey(rawApiKey, 'llm', provider);
         if (!apiKey) {
           res.writeHead(400);
           res.end(JSON.stringify({ error: '请填写 LLM API Key' }));
@@ -935,8 +1018,19 @@ Your sole objective is to convert user locks and style preferences into a single
       // 7.5 生图 API 连通性测试 (优先零费用握手检测)
       if (pathname === '/api/image/test' && req.method === 'POST') {
         const body = await parseRequestBody(req);
-        const { baseUrl, apiKey: rawApiKey, model, mode, provider } = body;
-        const cleanBaseUrl = (baseUrl || '').replace(/\/+$/, '');
+        const { baseUrl: reqBaseUrl, apiKey: rawApiKey, model, mode, provider } = body;
+        const savedSettings = readJson(SETTINGS_FILE, {});
+        const savedImgGen = savedSettings.imageGen || {};
+        const savedProviderCfg = provider ? (savedImgGen.providers?.[provider] || {}) : {};
+
+        // 安全策略：如果传的是掩码，强制使用持久化档案配置的 baseUrl
+        let cleanBaseUrl = '';
+        if (isMaskedKey(rawApiKey)) {
+          cleanBaseUrl = (savedProviderCfg.baseUrl || savedImgGen.baseUrl || (provider === 'siliconflow' ? 'https://api.siliconflow.cn/v1' : 'https://api.openai.com/v1')).replace(/\/+$/, '');
+        } else {
+          cleanBaseUrl = (reqBaseUrl || savedProviderCfg.baseUrl || savedImgGen.baseUrl || (provider === 'siliconflow' ? 'https://api.siliconflow.cn/v1' : 'https://api.openai.com/v1')).replace(/\/+$/, '');
+        }
+
         const isDash = provider === 'dashscope' || cleanBaseUrl.includes('dashscope') || (model && (model.toLowerCase().includes('qwen-image') || model.toLowerCase().startsWith('wanx')));
         const targetProvider = provider || (isDash ? 'dashscope' : (cleanBaseUrl.includes('siliconflow') ? 'siliconflow' : (cleanBaseUrl.includes('bigmodel') ? 'zhipu' : 'custom')));
         const apiKey = resolveRealApiKey(rawApiKey, 'imageGen', targetProvider);
@@ -1108,12 +1202,14 @@ Your sole objective is to convert user locks and style preferences into a single
       if (pathname === '/api/image/generate' && req.method === 'POST') {
         const body = await parseRequestBody(req);
         const settings = readJson(SETTINGS_FILE, {});
-        const imgConfig = body.config || settings.imageGen || {};
-
-        const provider = imgConfig.provider || 'custom';
-        const baseUrl = (imgConfig.baseUrl || 'https://api.gemai.cc/v1').replace(/\/+$/, '');
-        const apiKey = resolveRealApiKey(imgConfig.apiKey, 'imageGen', provider);
-        const model = imgConfig.model || 'qwen-image-3.0';
+        const savedImgGen = settings.imageGen || {};
+        const provider = body.config?.provider || savedImgGen.provider || 'custom';
+        const savedProviderCfg = savedImgGen.providers?.[provider] || {};
+        const defaultBaseUrl = provider === 'siliconflow' ? 'https://api.siliconflow.cn/v1' : 'https://api.openai.com/v1';
+        // 安全核心：严格读取持久化档案中的 baseUrl，防止请求体注入攻击
+        const baseUrl = (savedProviderCfg.baseUrl || savedImgGen.baseUrl || defaultBaseUrl).replace(/\/+$/, '');
+        const apiKey = resolveRealApiKey(body.config?.apiKey, 'imageGen', provider);
+        const model = body.config?.model || savedProviderCfg.model || savedImgGen.model || 'qwen-image-3.0';
         const prompt = body.prompt;
         const size = body.size || '1024x1024';
 
@@ -1430,6 +1526,12 @@ process.on('uncaughtException', (err) => {
 });
 
 // 安全绑定本地回路 127.0.0.1，拒绝外部未授权局域网访问
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`形色 XINGSE 控制台服务已就绪: http://127.0.0.1:${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, '127.0.0.1', () => {
+    console.log(`形色 XINGSE 控制台服务已就绪: http://127.0.0.1:${PORT}`);
+  });
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { resolveRealApiKey, writeJson, isMaskedKey };
+}

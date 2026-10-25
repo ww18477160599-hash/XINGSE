@@ -2,6 +2,60 @@
  * 形色 XINGSE 前后端 API 通信层 (双模自适应版: 兼容 Node.js 本地服务 与 Tauri 纯桌面离线环境)
  */
 
+// 本地安全通信客户端：仅针对本程序内部 /api/* 接口自动附带安全认证头，绝不污染任何外部官方/直连 API
+async function localFetch(url, options = {}) {
+  const opts = { ...options };
+  const headers = { ...(opts.headers || {}) };
+  if (typeof url === 'string' && url.startsWith('/api/')) {
+    headers['X-Xingse-Client'] = '1';
+  }
+  opts.headers = headers;
+  return fetch(url, opts);
+}
+
+// 统一尺寸格式化纯函数（供浏览器/Tauri端与服务端完全同构）
+function formatImageResolution(sizeStr, provider, model) {
+  const norm = (sizeStr || '1024x1024').toLowerCase().replace('*', 'x');
+  const [wStr, hStr] = norm.split('x');
+  const w = parseInt(wStr, 10) || 1024;
+  const h = parseInt(hStr, 10) || 1024;
+  const ratio = w / h;
+
+  // 1. DashScope (千问与通义万相)
+  const isDashScope = provider === 'dashscope' ||
+    (model && (model.toLowerCase().includes('qwen-image') || model.toLowerCase().startsWith('wanx')));
+  if (isDashScope) {
+    if (ratio >= 1.6) return '1280*720';        // 16:9
+    if (ratio >= 1.4) return '1248*832';        // 3:2
+    if (ratio >= 1.2) return '1280*960';        // 4:3
+    if (ratio <= 0.6) return '720*1280';        // 9:16
+    if (ratio <= 0.7) return '832*1248';        // 2:3
+    if (ratio <= 0.85) return '960*1280';       // 3:4
+    return '1024*1024';                         // 1:1
+  }
+
+  // 2. 智谱 AI (CogView)
+  if (provider === 'zhipu' || (model && model.toLowerCase().startsWith('cogview'))) {
+    if (ratio >= 1.6) return '1344x768';
+    if (ratio >= 1.2) return '1152x864';
+    if (ratio <= 0.6) return '768x1344';
+    if (ratio <= 0.85) return '864x1152';
+    return '1024x1024';
+  }
+
+  // 3. OpenAI DALL-E 与 GPT-Image 系列标准画幅适配
+  const isGptOrDallE = provider === 'openai' ||
+    (model && (model.toLowerCase().includes('dall-e') || model.toLowerCase().includes('gpt-image')));
+  if (isGptOrDallE) {
+    if (ratio >= 1.3) return '1792x1024';
+    if (ratio <= 0.77) return '1024x1792';
+    return '1024x1024';
+  }
+
+  // 4. 硅基流动或其他标准 OpenAI 兼容
+  return norm;
+}
+
 const ApiService = {
   // 环境检测: 判定是否处于原生 Tauri 桌面环境 (tauri.localhost / tauri: 协议)
   isTauri() {
@@ -17,7 +71,7 @@ const ApiService = {
   async fetchOptions() {
     if (!this.isTauri()) {
       try {
-        const res = await fetch('/api/options');
+        const res = await localFetch('/api/options');
         const ct = res.headers.get('content-type') || '';
         if (res.ok && ct.includes('application/json')) {
           return await res.json();
@@ -56,7 +110,7 @@ const ApiService = {
 
     if (!this.isTauri()) {
       try {
-        const res = await fetch('/api/custom-options', {
+        const res = await localFetch('/api/custom-options', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fieldId, optionName: cleanOpt })
@@ -89,7 +143,7 @@ const ApiService = {
     const cleanOpt = (optionName || '').trim();
     if (!this.isTauri()) {
       try {
-        const res = await fetch('/api/custom-options', {
+        const res = await localFetch('/api/custom-options', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fieldId, optionName: cleanOpt })
@@ -118,7 +172,7 @@ const ApiService = {
   async getSettings() {
     if (!this.isTauri()) {
       try {
-        const res = await fetch('/api/settings');
+        const res = await localFetch('/api/settings');
         const ct = res.headers.get('content-type') || '';
         if (res.ok && ct.includes('application/json')) {
           const data = await res.json();
@@ -136,12 +190,35 @@ const ApiService = {
 
   async saveSettings(settings) {
     try {
-      localStorage.setItem('xingse_settings', JSON.stringify(settings));
+      if (this.isTauri()) {
+        // Tauri 桌面端纯本地运行 (无 Node 本地代理)，依赖 localStorage 跨启动持久化凭证
+        localStorage.setItem('xingse_settings', JSON.stringify(settings || {}));
+      } else {
+        // Node 服务端模式：凭证由本地 data/settings.json 存储，localStorage 深度净化脱敏
+        const safeSettings = JSON.parse(JSON.stringify(settings || {}));
+        if (safeSettings.llm) {
+          delete safeSettings.llm.apiKey;
+          if (safeSettings.llm.providers) {
+            for (const p in safeSettings.llm.providers) {
+              delete safeSettings.llm.providers[p].apiKey;
+            }
+          }
+        }
+        if (safeSettings.imageGen) {
+          delete safeSettings.imageGen.apiKey;
+          if (safeSettings.imageGen.providers) {
+            for (const p in safeSettings.imageGen.providers) {
+              delete safeSettings.imageGen.providers[p].apiKey;
+            }
+          }
+        }
+        localStorage.setItem('xingse_settings', JSON.stringify(safeSettings));
+      }
     } catch (e) {}
 
     if (!this.isTauri()) {
       try {
-        const res = await fetch('/api/settings', {
+        const res = await localFetch('/api/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(settings)
@@ -160,7 +237,7 @@ const ApiService = {
     const cfg = config || settings?.llm || (typeof state !== 'undefined' ? state.settings?.llm : null) || {};
     if (!ApiService.isTauri()) {
       try {
-        const res = await fetch('/api/llm/test', {
+        const res = await localFetch('/api/llm/test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(cfg)
@@ -215,7 +292,7 @@ const ApiService = {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000);
       try {
-        const res = await fetch('/api/llm/generate', {
+        const res = await localFetch('/api/llm/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt, config: cfg, lang, targetModel: tm, targetProvider: tp }),
@@ -362,7 +439,7 @@ Your sole objective is to convert user locks and style preferences into a single
     const cfg = config || settings?.imageGen || (typeof state !== 'undefined' ? state.settings?.imageGen : null) || {};
     if (!ApiService.isTauri()) {
       try {
-        const res = await fetch('/api/image/test', {
+        const res = await localFetch('/api/image/test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(cfg)
@@ -424,7 +501,7 @@ Your sole objective is to convert user locks and style preferences into a single
       const cfg = config || settings?.imageGen || (typeof state !== 'undefined' ? state.settings?.imageGen : null) || {};
       if (!ApiService.isTauri()) {
         try {
-          const res = await fetch('/api/image/generate', {
+          const res = await localFetch('/api/image/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt, size, title, config: cfg }),
@@ -468,7 +545,7 @@ Your sole objective is to convert user locks and style preferences into a single
       if (provider === 'dashscope' || baseUrl.includes('dashscope') || (model && (model.startsWith('wanx') || model.includes('qwen-image')))) {
         if (model && model.toLowerCase().includes('qwen-image')) {
           // Qwen-Image 官方标准走百炼多模态生成通道
-          const cleanSize = (size || '1024x1024').toLowerCase().replace('x', '*');
+          const cleanSize = formatImageResolution(size, 'dashscope', model);
           const r = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
             method: 'POST',
             headers: {
@@ -500,7 +577,7 @@ Your sole objective is to convert user locks and style preferences into a single
           url = data.output?.choices?.[0]?.message?.content?.[0]?.image || data.data?.[0]?.url || '';
         } else {
           // 通义万相原生异步任务模式
-          const cleanSize = (size || '1024x1024').toLowerCase().replace('x', '*');
+          const cleanSize = formatImageResolution(size, 'dashscope', model);
           const submitRes = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis', {
             method: 'POST',
             headers: {
@@ -546,18 +623,24 @@ Your sole objective is to convert user locks and style preferences into a single
           if (!url) throw new Error('百炼万相生图超时或未获取到图片');
         }
       } else {
+        const requestPayload = {
+          model: model,
+          prompt: prompt,
+          n: 1
+        };
+        if (provider === 'siliconflow' || baseUrl.includes('siliconflow')) {
+          requestPayload.image_size = formatImageResolution(size, 'siliconflow', model);
+        } else {
+          requestPayload.size = formatImageResolution(size, provider, model);
+        }
+
         const r = await fetch(`${baseUrl}/images/generations`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
           },
-          body: JSON.stringify({
-            model: model,
-            prompt: prompt,
-            size: size || '1024x1024',
-            n: 1
-          }),
+          body: JSON.stringify(requestPayload),
           signal
         });
         if (!r.ok) {
@@ -575,6 +658,7 @@ Your sole objective is to convert user locks and style preferences into a single
       let savedError = '';
       try {
         const saveRes = await ApiService.saveLocalImage(url, title);
+        if (saveRes?.isBrowserDownload) isBrowserDownload = true;
         if (saveRes && saveRes.success && saveRes.savedPath) {
           savedSuccess = true;
           savedPath = saveRes.savedPath;
@@ -680,7 +764,7 @@ Your sole objective is to convert user locks and style preferences into a single
 
     // 2. 尝试 Node 服务端落盘兜底
     try {
-      const res = await fetch('/api/image/save-local', {
+      const res = await localFetch('/api/image/save-local', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl, title, savePath: saveDir })
@@ -697,25 +781,29 @@ Your sole objective is to convert user locks and style preferences into a single
       }
     } catch (e) {}
 
-    // 3. 兜底保护：自动触发浏览器端下载，确保图片 100% 留存在电脑中
-    try {
-      const a = document.createElement('a');
-      a.href = imageUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      return {
-        success: true,
-        savedPath: `已触发下载至本地下载目录: ${filename}`,
-        filename: filename,
-        isBrowserDownload: true
-      };
-    } catch (dlErr) {
-      console.warn('Browser trigger download failed:', dlErr);
+    // 3. 兜底保护：仅在纯 Web 浏览器环境中尝试触发浏览器下载
+    // 在 Tauri 桌面环境下，若原生 Rust 写入失败，绝不使用 a.click() 伪造成功
+    if (!this.isTauri()) {
+      try {
+        const a = document.createElement('a');
+        a.href = imageUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return {
+          success: false, // 明确标注未直接落盘至指定磁盘目录
+          savedPath: '',
+          filename: filename,
+          isBrowserDownload: true,
+          error: '已触发浏览器下载，但未能直接归档到指定目录'
+        };
+      } catch (dlErr) {
+        console.warn('Browser trigger download failed:', dlErr);
+      }
     }
 
-    return { success: false, error: '未能写入本地磁盘' };
+    return { success: false, error: '未能写入指定本地磁盘目录' };
   },
 
   // 5.5 打开本地文件夹 (Tauri 原生 Explorer + 服务端兜底)
@@ -734,7 +822,7 @@ Your sole objective is to convert user locks and style preferences into a single
     }
 
     try {
-      const res = await fetch('/api/system/open-folder', {
+      const res = await localFetch('/api/system/open-folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder: targetFolder })
@@ -760,7 +848,7 @@ Your sole objective is to convert user locks and style preferences into a single
     }
 
     try {
-      const res = await fetch('/api/system/select-folder', {
+      const res = await localFetch('/api/system/select-folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initialPath: initialPath || '' })
@@ -791,7 +879,7 @@ Your sole objective is to convert user locks and style preferences into a single
 
     // 2. 尝试从 Node 后端接口读取
     try {
-      const res = await fetch('/api/history');
+      const res = await localFetch('/api/history');
       if (res.ok) return await res.json();
     } catch (e) {}
 
@@ -819,7 +907,7 @@ Your sole objective is to convert user locks and style preferences into a single
 
     // 2. 尝试保存至 Node 后端
     try {
-      const res = await fetch('/api/history', {
+      const res = await localFetch('/api/history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(record)
@@ -858,7 +946,7 @@ Your sole objective is to convert user locks and style preferences into a single
 
     // 2. 尝试从 Node 后端接口删除
     try {
-      await fetch(`/api/history?id=${encodeURIComponent(id)}`, {
+      await localFetch(`/api/history?id=${encodeURIComponent(id)}`, {
         method: 'DELETE'
       });
     } catch (e) {}
@@ -884,7 +972,7 @@ Your sole objective is to convert user locks and style preferences into a single
 
     // 2. Node
     try {
-      await fetch('/api/history?all=true', { method: 'DELETE' });
+      await localFetch('/api/history?all=true', { method: 'DELETE' });
     } catch (e) {}
 
     // 3. localStorage
@@ -899,7 +987,7 @@ Your sole objective is to convert user locks and style preferences into a single
   async getPresets() {
     if (!this.isTauri()) {
       try {
-        const res = await fetch('/api/presets');
+        const res = await localFetch('/api/presets');
         const ct = res.headers.get('content-type') || '';
         if (res.ok && ct.includes('application/json')) return await res.json();
       } catch (e) {}
@@ -913,7 +1001,7 @@ Your sole objective is to convert user locks and style preferences into a single
   async savePreset(name, selections, locks) {
     if (!this.isTauri()) {
       try {
-        const res = await fetch('/api/presets', {
+        const res = await localFetch('/api/presets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, selections, locks })
@@ -928,7 +1016,7 @@ Your sole objective is to convert user locks and style preferences into a single
   async deletePreset(id) {
     if (!this.isTauri()) {
       try {
-        const res = await fetch('/api/presets', {
+        const res = await localFetch('/api/presets', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id })
@@ -941,4 +1029,8 @@ Your sole objective is to convert user locks and style preferences into a single
   }
 };
 
-window.ApiService = ApiService;
+if (typeof window !== 'undefined') window.ApiService = ApiService;
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { formatImageResolution, ApiService };
+}

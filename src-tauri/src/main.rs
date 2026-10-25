@@ -12,7 +12,8 @@ fn save_image_bytes(bytes: Vec<u8>, save_dir: String, filename: String) -> Resul
     if !dir.exists() {
         fs::create_dir_all(&dir).map_err(|e| format!("创建目录失败: {}", e))?;
     }
-    let target_path = dir.join(&filename);
+    let clean_name = sanitize_filename(&filename);
+    let target_path = dir.join(&clean_name);
     fs::write(&target_path, &bytes).map_err(|e| format!("写入图片文件失败: {}", e))?;
     Ok(target_path.to_string_lossy().to_string())
 }
@@ -23,7 +24,8 @@ fn save_image_to_disk(image_data_or_url: String, save_dir: String, filename: Str
     if !dir.exists() {
         let _ = fs::create_dir_all(&dir);
     }
-    let target_path = dir.join(&filename);
+    let clean_name = sanitize_filename(&filename);
+    let target_path = dir.join(&clean_name);
     let target_str = target_path.to_string_lossy().to_string();
 
     if image_data_or_url.starts_with("http://") || image_data_or_url.starts_with("https://") {
@@ -69,7 +71,8 @@ fn open_folder(path: String) -> Result<(), String> {
 fn select_folder(initial_path: Option<String>) -> Result<String, String> {
     let norm = initial_path.unwrap_or_default();
     let ps_script = format!(
-        "Add-Type -AssemblyName System.Windows.Forms;\
+        "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8;\
+         Add-Type -AssemblyName System.Windows.Forms;\
          $d = New-Object System.Windows.Forms.FolderBrowserDialog;\
          $d.Description = '形色 - 请选择图片保存目录';\
          $d.ShowNewFolderButton = $true;\
@@ -87,6 +90,51 @@ fn select_folder(initial_path: Option<String>) -> Result<String, String> {
         .map_err(|e| e.to_string())?;
     let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
     Ok(path)
+}
+
+
+fn sanitize_filename(name: &str) -> String {
+    let clean: String = name.chars()
+        .filter(|c| !['\\', '/', ':', '*', '?', '"', '<', '>', '|'].contains(c))
+        .collect();
+    let trimmed = clean.trim();
+    if trimmed.is_empty() { "output.png".to_string() } else { trimmed.to_string() }
+}
+
+fn atomic_write_file(file: &std::path::Path, content: &str) -> Result<(), String> {
+    if let Some(parent) = file.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    let parent_dir = file.parent().unwrap_or_else(|| std::path::Path::new("."));
+    let rand_nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    let tmp_file = parent_dir.join(format!(".{}.tmp", rand_nanos));
+    let bak_file = parent_dir.join(format!(".{}.bak", rand_nanos));
+
+    fs::write(&tmp_file, content).map_err(|e| format!("写入临时文件失败: {}", e))?;
+
+    // 优先执行原子重命名
+    if fs::rename(&tmp_file, file).is_err() {
+        let mut backed_up = false;
+        if file.exists() {
+            if fs::rename(file, &bak_file).is_ok() {
+                backed_up = true;
+            }
+        }
+        if let Err(e) = fs::rename(&tmp_file, file) {
+            if backed_up {
+                let _ = fs::rename(&bak_file, file);
+            }
+            let _ = fs::remove_file(&tmp_file);
+            return Err(format!("原子替换文件失败: {}", e));
+        }
+        if backed_up {
+            let _ = fs::remove_file(&bak_file);
+        }
+    }
+    Ok(())
 }
 
 fn get_history_file() -> PathBuf {
@@ -143,7 +191,7 @@ fn save_history_record(record_json: String) -> Result<bool, String> {
         }
         let serialized = serde_json::to_string_pretty(&list)
             .map_err(|e| format!("序列化失败: {}", e))?;
-        fs::write(&file, serialized).map_err(|e| format!("写入历史文件失败: {}", e))?;
+        atomic_write_file(&file, &serialized)?;
         Ok(true)
     } else {
         Err("解析记录JSON失败".into())
@@ -163,14 +211,14 @@ fn delete_history_record(id: String) -> Result<bool, String> {
     });
     let serialized = serde_json::to_string_pretty(&list)
         .map_err(|e| format!("序列化失败: {}", e))?;
-    fs::write(&file, serialized).map_err(|e| format!("写入历史文件失败: {}", e))?;
+    atomic_write_file(&file, &serialized)?;
     Ok(true)
 }
 
 #[tauri::command]
 fn clear_history_records() -> Result<bool, String> {
     let file = get_history_file();
-    fs::write(&file, "[]").map_err(|e| format!("清空历史文件失败: {}", e))?;
+    atomic_write_file(&file, "[]")?;
     Ok(true)
 }
 

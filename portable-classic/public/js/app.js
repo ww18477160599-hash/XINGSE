@@ -11,7 +11,7 @@ const state = {
   selections: {},
   locks: {},
   settings: {},
-  promptLanguage: localStorage.getItem('xingse_prompt_lang') || 'zh', // 'zh' | 'en'
+  promptLanguage: (typeof localStorage !== 'undefined' ? localStorage.getItem('xingse_prompt_lang') : null) || 'zh', // 'zh' | 'en'
   currentTab: 'prompt', // prompt | canvas
   history: [],
   filmstrip: [],
@@ -22,7 +22,7 @@ const state = {
   galleryFilterAlbum: 'all',
   gallerySort: 'time-desc',
   gallerySearchQuery: '',
-  favorites: JSON.parse(localStorage.getItem('xingse_favorites') || '[]'),
+  favorites: (() => { try { if (typeof localStorage !== 'undefined') return JSON.parse(localStorage.getItem('xingse_favorites') || '[]'); } catch (_) {} return []; })(),
   promptUndoStack: [] // 提示词历史回退栈 (记录用户编辑与自动生成前的版本快照)
 };
 
@@ -186,8 +186,9 @@ function showToast(message, type = 'info') {
 }
 
 // 检查字段当前是否在生效的服装分区中
-function isFieldPartitionActive(fieldId) {
-  const outfitMode = state.selections['outfit_mode'] || '上下装';
+function isFieldPartitionActive(fieldId, selections = state.selections) {
+  const sel = selections || (typeof state !== 'undefined' ? state.selections : {}) || {};
+  const outfitMode = sel['outfit_mode'] || '上下装';
   if (fieldId.startsWith('upper_') || fieldId.startsWith('lower_')) {
     return outfitMode === '上下装' || outfitMode === '成套装';
   }
@@ -195,8 +196,8 @@ function isFieldPartitionActive(fieldId) {
     return outfitMode === '连衣裙' || outfitMode === '连体装';
   }
   if (fieldId.startsWith('outerwear_')) {
-    const ow = state.selections['outerwear'];
-    return !!(ow && ow !== '无外搭');
+    const ow = sel['outerwear'];
+    return !!(ow && ow !== '无' && ow !== '无外搭');
   }
   return true;
 }
@@ -581,7 +582,7 @@ function initOptionsGlobalSearch() {
 function initGlamourStudio() {}
 function checkFormulaActive(formula) { return false; }
 function updateFormulaCardsActive() {}
-window.updateFormulaCardsActive = updateFormulaCardsActive;
+if (typeof window !== 'undefined') window.updateFormulaCardsActive = updateFormulaCardsActive;
 
 // 控制台全量字段渲染 (超紧凑 3~4 列多列网格矩阵)
 function renderConsole() {
@@ -776,7 +777,7 @@ function openDensePickerPopover(field, tileEl) {
         item.title = `⚠️ 相悖选项：${conflict.reason}`;
       }
       item.innerHTML = `
-        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${opt}${isCustom ? ' (自建)' : ''}</span>
+        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(opt)}${isCustom ? ' (自建)' : ''}</span>
         <div style="display:flex; align-items:center; gap:6px;">
           ${conflict ? `<span class="conflict-badge" title="${escapeHtml(conflict.reason)}">⚠️ 相悖</span>` : ''}
           ${isSelected ? '<span style="color:var(--accent-gold); font-weight:bold;">✓</span>' : ''}
@@ -1064,7 +1065,7 @@ function renderLockPool() {
     chip.dataset.fieldId = fieldId;
 
     chip.innerHTML = `
-      <span>${groupName}·${field.name}＝${val}</span>
+      <span>${escapeHtml(groupName)}·${escapeHtml(field.name)}＝${escapeHtml(val)}</span>
       ${isActive ? '' : '<span class="lock-chip-tag-inactive">当前不生效</span>'}
       <span class="lock-chip-del" title="取消锁定">✕</span>
     `;
@@ -1726,23 +1727,73 @@ function getVal(id) {
 }
 
 // 保存 API 设置
+// 判断是否显式清空或更新 Key (严格状态机语义)
+function processKeyForSave(rawInput, oldKey, isClearFlagged) {
+  if (isClearFlagged) {
+    return null; // 只有显式点击“清除凭证”才执行删除
+  }
+  if (rawInput === '' || !rawInput) {
+    return undefined; // 输入为空但未点击清除时，保持原值不修改
+  }
+  if (rawInput.includes('•') || rawInput.includes('\u2022') || rawInput.includes('....') || rawInput.includes('****')) {
+    return undefined; // 掩码占位符保持原值不修改
+  }
+  return rawInput.trim(); // 明确输入新明文时更新
+}
+
 async function handleSaveSettings() {
   ensureProviderSettings();
 
   const curLlmP = getVal('llm-provider') || 'dashscope';
   const curImgP = getVal('image-provider') || 'dashscope';
 
+  const rawLlmKeyInput = getVal('llm-api-key');
+  const rawImgKeyInput = getVal('image-api-key');
+
+  // 判断是否显式清空或更新 Key (严格状态机语义)
+  function processKeyForSave(rawInput, oldKey, isClearFlagged) {
+    if (isClearFlagged) {
+      return null; // 只有显式点击“清除凭证”才执行删除
+    }
+    if (rawInput === '' || !rawInput) {
+      return undefined; // 输入为空但未点击清除时，保持原值不修改
+    }
+    if (rawInput.includes('•') || rawInput.includes('\u2022') || rawInput.includes('....') || rawInput.includes('****')) {
+      return undefined; // 掩码占位符保持原值不修改
+    }
+    return rawInput.trim(); // 明确输入新明文时更新
+  }
+
+  const llmKeyToSave = processKeyForSave(rawLlmKeyInput, state.settings.llm?.providers?.[curLlmP]?.apiKey, state.clearKeyFlags?.llm?.[curLlmP]);
+  const imgKeyToSave = processKeyForSave(rawImgKeyInput, state.settings.imageGen?.providers?.[curImgP]?.apiKey, state.clearKeyFlags?.imageGen?.[curImgP]);
+
+  // 重置清除标记
+  if (state.clearKeyFlags?.llm) state.clearKeyFlags.llm[curLlmP] = false;
+  if (state.clearKeyFlags?.imageGen) state.clearKeyFlags.imageGen[curImgP] = false;
+
   // 1. 同步当前输入到各平台独立持久化档案库
-  state.settings.llm.providers[curLlmP] = {
+  const llmProviderPayload = {
     baseUrl: getVal('llm-base-url'),
-    apiKey: getVal('llm-api-key'),
     model: getVal('llm-model')
   };
+  if (llmKeyToSave !== undefined) {
+    llmProviderPayload.apiKey = llmKeyToSave;
+  }
+  state.settings.llm.providers[curLlmP] = {
+    ...state.settings.llm.providers[curLlmP],
+    ...llmProviderPayload
+  };
 
-  state.settings.imageGen.providers[curImgP] = {
+  const imgProviderPayload = {
     baseUrl: getVal('image-base-url'),
-    apiKey: getVal('image-api-key'),
     model: getVal('image-model')
+  };
+  if (imgKeyToSave !== undefined) {
+    imgProviderPayload.apiKey = imgKeyToSave;
+  }
+  state.settings.imageGen.providers[curImgP] = {
+    ...state.settings.imageGen.providers[curImgP],
+    ...imgProviderPayload
   };
 
   // 2. 组装整体设置对象
@@ -1750,7 +1801,6 @@ async function handleSaveSettings() {
     llm: {
       provider: curLlmP,
       baseUrl: getVal('llm-base-url'),
-      apiKey: getVal('llm-api-key'),
       model: getVal('llm-model'),
       temperature: parseFloat(getVal('llm-temperature')) || 0.7,
       maxTokens: 2000,
@@ -1759,15 +1809,26 @@ async function handleSaveSettings() {
     imageGen: {
       provider: curImgP,
       baseUrl: getVal('image-base-url'),
-      apiKey: getVal('image-api-key'),
       model: getVal('image-model'),
       providers: state.settings.imageGen.providers
     },
-    savePath: getVal('settings-save-path') || './outputs'
+    savePath: getVal('settings-save-path') || 'D:\\xingsepic'
   };
 
+  if (llmKeyToSave !== undefined) newSettings.llm.apiKey = llmKeyToSave;
+  if (imgKeyToSave !== undefined) newSettings.imageGen.apiKey = imgKeyToSave;
+
   try {
-    localStorage.setItem('xingse_settings', JSON.stringify(newSettings));
+    // 本地存储净化：绝不把掩码直接当作明文存进 localStorage
+    if (ApiService.isTauri()) {
+      localStorage.setItem('xingse_settings', JSON.stringify(newSettings));
+    } else {
+      const localStoreSettings = JSON.parse(JSON.stringify(newSettings));
+      if (localStoreSettings.llm) delete localStoreSettings.llm.apiKey;
+      if (localStoreSettings.imageGen) delete localStoreSettings.imageGen.apiKey;
+      localStorage.setItem('xingse_settings', JSON.stringify(localStoreSettings));
+    }
+
     state.settings = newSettings;
     await ApiService.saveSettings(newSettings);
 
@@ -2202,16 +2263,25 @@ async function handleGenerateImage() {
     if (res.savedSuccess) {
       if (fileNameEl) fileNameEl.textContent = `已保存: ${res.savedFile}`;
       if (filePathEl) filePathEl.textContent = res.savedPath;
-      showToast(`生图成功！图片已自动归档保存，耗时: ${(res.elapsedMs / 1000).toFixed(1)}s`, 'success');
+      if (res.isBrowserDownload) {
+        showToast(`生图成功！已通过浏览器触发下载，耗时: ${(res.elapsedMs / 1000).toFixed(1)}s`, 'info');
+      } else {
+        showToast(`生图成功！图片已自动归档保存，耗时: ${(res.elapsedMs / 1000).toFixed(1)}s`, 'success');
+      }
     } else {
-      if (fileNameEl) fileNameEl.innerHTML = `<span style="color:#f87171;">生成成功，但本地保存失败 (${res.savedError || '写入异常'})</span>`;
+      if (fileNameEl) fileNameEl.innerHTML = `<span style="color:#f87171;">生成成功，但本地保存失败 (${escapeHtml(res.savedError || '写入异常')})</span>`;
       if (filePathEl) filePathEl.innerHTML = `<button class="btn btn-secondary btn-sm" id="btn-retry-save-image">🔄 重试保存到本地</button>`;
       document.getElementById('btn-retry-save-image')?.addEventListener('click', async () => {
         try {
           const saveRes = await ApiService.saveLocalImage(res.imageUrl, projectTitle);
-          if (fileNameEl) fileNameEl.textContent = `已补存: ${saveRes.savedFile}`;
-          if (filePathEl) filePathEl.textContent = saveRes.savedPath;
-          showToast('本地保存成功！', 'success');
+          if (saveRes && saveRes.success && saveRes.savedPath) {
+            const fileName = saveRes.savedFile || saveRes.filename || '作品图片.png';
+            if (fileNameEl) fileNameEl.textContent = `已补存: ${fileName}`;
+            if (filePathEl) filePathEl.textContent = saveRes.savedPath;
+            showToast('本地保存成功！', 'success');
+          } else {
+            showToast(`补存失败: ${saveRes?.error || '未能写入指定磁盘目录'}`, 'error');
+          }
         } catch (saveErr) {
           showToast(`保存失败: ${saveErr.message}`, 'error');
         }
@@ -2248,7 +2318,7 @@ async function handleGenerateImage() {
 
     // 胶卷底片轴同步新增
     const filmstripItem = {
-      id: Date.now(),
+      id: historyItem.id,
       displayUrl: res.localUrl || res.imageUrl,
       imageUrl: res.imageUrl,
       title: res.title || projectTitle,
@@ -2704,7 +2774,7 @@ function renderGallery() {
     const safeImgSrc = escapeHtml(displayImg);
     const isFav = state.favorites.includes(String(item.id));
     const arText = item.aspectRatio || (item.size ? item.size.replace('*', '×') : '');
-    const themeTag = item.selections?.theme || item.theme || '';
+    const themeTag = escapeHtml(item.selections?.theme || item.theme || '');
     const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
 
     card.innerHTML = `
@@ -2737,7 +2807,7 @@ function renderGallery() {
           </button>
         </div>
         <div class="gallery-card-meta-row">
-          <span>${themeTag ? '🏷️ ' + themeTag : (item.model || 'AI')}</span>
+          <span>${themeTag ? '🏷️ ' + themeTag : escapeHtml(item.model || 'AI')}</span>
           <span>${dateStr}</span>
         </div>
       </div>
@@ -2859,7 +2929,7 @@ async function loadGallery() {
     // 初始底片胶卷填充
     if (state.history.length > 0 && state.filmstrip.length === 0) {
       state.filmstrip = state.history.slice(0, 10).map(h => ({
-        id: h.timestamp || h.id || Date.now() + Math.random(),
+        id: h.id || ('hist_' + (h.timestamp ? new Date(h.timestamp).getTime() : Date.now())),
         displayUrl: h.displayUrl || h.localUrl || h.imageUrl || '',
         imageUrl: h.imageUrl || '',
         title: h.title || '摄影作品',
@@ -2987,6 +3057,32 @@ function bindGlobalEvents() {
     openModal('settings-modal');
   });
   document.getElementById('btn-close-settings')?.addEventListener('click', () => closeModal('settings-modal'));
+    document.getElementById('btn-clear-llm-key')?.addEventListener('click', () => {
+    const p = getVal('llm-provider') || 'dashscope';
+    document.getElementById('llm-api-key').value = '';
+    if (!state.clearKeyFlags) state.clearKeyFlags = { llm: {}, imageGen: {} };
+    state.clearKeyFlags.llm[p] = true;
+    showToast('已标记清除当前 LLM Key，点击「保存全部设置」后生效', 'info');
+  });
+  document.getElementById('btn-clear-image-key')?.addEventListener('click', () => {
+    const p = getVal('image-provider') || 'dashscope';
+    document.getElementById('image-api-key').value = '';
+    if (!state.clearKeyFlags) state.clearKeyFlags = { llm: {}, imageGen: {} };
+    state.clearKeyFlags.imageGen[p] = true;
+    showToast('已标记清除当前生图 Key，点击「保存全部设置」后生效', 'info');
+  });
+  document.getElementById('llm-api-key')?.addEventListener('input', (e) => {
+    if (e.target.value.trim().length > 0 && state.clearKeyFlags?.llm) {
+      const p = getVal('llm-provider') || 'dashscope';
+      state.clearKeyFlags.llm[p] = false;
+    }
+  });
+  document.getElementById('image-api-key')?.addEventListener('input', (e) => {
+    if (e.target.value.trim().length > 0 && state.clearKeyFlags?.imageGen) {
+      const p = getVal('image-provider') || 'dashscope';
+      state.clearKeyFlags.imageGen[p] = false;
+    }
+  });
   document.getElementById('btn-save-settings')?.addEventListener('click', handleSaveSettings);
   document.getElementById('btn-test-llm')?.addEventListener('click', handleTestLlm);
   document.getElementById('btn-test-image')?.addEventListener('click', handleTestImageGen);
@@ -3377,4 +3473,8 @@ function bindGlobalEvents() {
 }
 
 // 页面加载完成后启动
-window.addEventListener('DOMContentLoaded', initApp);
+if (typeof window !== 'undefined') window.addEventListener('DOMContentLoaded', initApp);
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { isFieldPartitionActive, processKeyForSave };
+}

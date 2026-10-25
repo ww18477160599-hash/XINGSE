@@ -157,12 +157,12 @@ function assembleChinesePrompt(selections, optionsMap) {
   const parts = [];
 
   // 1. 创作基调与人物身份 (Identity)
-  const theme = selections['theme'] || '现代纯欲写真';
-  const tension = selections['tension'] || '成熟优雅';
+  const theme = selections['theme'] || '纯欲私房漫度';
+  const tension = selections['tension'] || '清透自然';
   const framing = selections['framing'] || '七分身';
   const ar = selections['aspect_ratio'] || '16:10';
 
-  const age = selections['age'] || '20–21岁';
+  const age = selections['age'] || '21–25岁';
   const ancestry = selections['ancestry'] || '东亚';
   const faceShape = selections['face_shape'] || '鹅蛋脸';
   const bone = selections['bone_structure'] || '';
@@ -171,7 +171,7 @@ function assembleChinesePrompt(selections, optionsMap) {
   const nose = selections['nose'] || '微弧鼻梁';
   const lips = selections['lips'] || '饱满唇';
   const skinTone = selections['skin_tone'] || '暖白';
-  const skinChar = selections['skin_character'] || '自然原生';
+  const skinChar = selections['skin_character'] || '原生微毛孔';
 
   let faceFeatures = [];
   if (brows) faceFeatures.push(`${brows}`);
@@ -244,8 +244,8 @@ function assembleChinesePrompt(selections, optionsMap) {
 
   let clothingDesc = '';
   if (outfitMode === '连衣裙' || outfitMode === '连体装') {
-    const kind = selections['onepiece_kind'] || '连体裙装';
-    const fabric = selections['onepiece_fabric'] || '丝质面料';
+    const kind = selections['onepiece_kind'] || '吊带裙';
+    const fabric = selections['onepiece_fabric'] || '真丝';
     const color = selections['onepiece_color'] || '';
     const fit = selections['onepiece_fit'] || '';
     const length = selections['onepiece_length'] || '';
@@ -259,8 +259,8 @@ function assembleChinesePrompt(selections, optionsMap) {
     clothingDesc = `身穿一件${opTags.join(' ')}`;
   } else {
     // 上下装 / 成套装
-    const upKind = selections['upper_kind'] || '精致上衣';
-    const upFabric = selections['upper_fabric'] || '质感织物';
+    const upKind = selections['upper_kind'] || '衬衫';
+    const upFabric = selections['upper_fabric'] || '棉平纹';
     const upColor = selections['upper_color'] || '';
     const upFit = selections['upper_fit'] || '';
     const upLen = selections['upper_length'] || '';
@@ -272,7 +272,7 @@ function assembleChinesePrompt(selections, optionsMap) {
 
     let upTags = [upColor, upFabric, upFit, upLen, upNeck ? `${upNeck}领` : '', upSleeve ? `${upSleeve}` : '', upCut ? `${upCut}剪裁` : '', upStruct ? `${upStruct}` : '', upLining, upKind].filter(Boolean);
 
-    const lowKind = selections['lower_kind'] || '下装';
+    const lowKind = selections['lower_kind'] || '半身裙';
     const lowFabric = selections['lower_fabric'] || '';
     const lowColor = selections['lower_color'] || '';
     const lowFit = selections['lower_fit'] || '';
@@ -311,19 +311,19 @@ function assembleChinesePrompt(selections, optionsMap) {
 
   // 4. 动作姿态与情绪表达 (Pose - 支点/朝向/四肢全部注入)
   const posture = selections['posture'] || '自然站立';
-  const bodyDir = selections['body_direction'] || '正对镜头';
+  const bodyDir = selections['body_direction'] || '正面';
   const support = selections['support'] || '';
   const hands = selections['hands'] || '自然垂落';
   const legAction = selections['leg_action'] || '';
   const headDir = selections['head_direction'] || '';
   const gaze = selections['gaze'] || '直视镜头';
-  const emotion = selections['emotion'] || '自信冷静';
+  const emotion = selections['emotion'] || '自信';
 
   let poseDesc = `她处于${posture}状态，躯干呈${bodyDir}${support ? '，以' + support + '为依靠支点' : ''}；双手${hands}${legAction ? '，双腿呈' + legAction : ''}；头部${headDir || '自然端正'}，眼神${gaze}，眉宇与嘴角间流露出饱满的${emotion}神态张力。`;
   parts.push(poseDesc);
 
   // 5. 空间场景与环境光影 (Space - 地点/天气/空间关系/道具全覆盖)
-  const location = selections['location'] || '极简现代公寓';
+  const location = selections['location'] || '现代公寓';
   let spaceType = selections['space_type'];
   if (!spaceType) {
     const OUTDOOR_LIST = ['庭院', '露台', '城市街道', '车站', '停车场', '海岸', '泳池', '湖岸', '山路', '草原', '花园', '海滨沙滩', '林荫道', '公园草坪', '礁石海边', '天台', '斑马线', '公路边', '极寒雪山', '冰川雪原', '荒野戈壁', '孤岛礁石', '荒凉公路', '工业天台', '无边泳池', '露天私人温汤', '极寒露天雪地', '天台无边泳池', '都市夜景露台', '海边落日沙滩', '游艇甲板日光'];
@@ -333,7 +333,7 @@ function assembleChinesePrompt(selections, optionsMap) {
     else spaceType = '室内';
   }
   const spaceStyle = selections['space_style'] || '';
-  const weather = selections['time_weather'] || '午后阳光';
+  const weather = selections['time_weather'] || '晴天';
   const envRelation = selections['environment_relation'] || '';
   const lighting = selections['lighting'] || '窗边柔光';
   const props = selections['props'] || '';
@@ -350,8 +350,8 @@ function assembleChinesePrompt(selections, optionsMap) {
   const cameraHeight = selections['camera_height'] || '平视';
   const cameraAngle = selections['camera_angle'] || '';
   const lens = selections['lens'] || '85mm';
-  const composition = selections['composition'] || '三分法构图';
-  const imaging = selections['imaging'] || '胶片电影质感';
+  const composition = selections['composition'] || '三分';
+  const imaging = selections['imaging'] || '电影色彩';
   const notes = selections['notes'] || '';
 
   let camDetails = [`采用${cameraHeight}机位`];
@@ -602,11 +602,11 @@ function extract7DSignature(selections) {
   return {
     character: `${selections['ancestry'] || '东亚'} ${selections['face_shape'] || ''} ${selections['hair'] || ''}`.trim(),
     outfit: `${mode}: ${outfitDesc}`.trim(),
-    support: `${selections['posture'] || '站立'} (支点:${selections['support'] || '地面'})`.trim(),
-    composition: `${selections['framing'] || '七分身'} ${selections['composition'] || '三分法'} @ ${selections['location'] || '室内'}`.trim(),
+    support: `${selections['posture'] || '自然站立'} (支点:${selections['support'] || '地面'})`.trim(),
+    composition: `${selections['framing'] || '七分身'} ${selections['composition'] || '三分'} @ ${selections['location'] || '室内'}`.trim(),
     camera: `${selections['camera_height'] || '平视'} ${selections['lens'] || '85mm'}`.trim(),
     lighting: `${selections['lighting'] || '窗边柔光'} ${selections['imaging'] || ''}`.trim(),
-    emotion: `${selections['emotion'] || '自信冷静'} (视线:${selections['gaze'] || '直视'})`.trim()
+    emotion: `${selections['emotion'] || '自信'} (视线:${selections['gaze'] || '直视镜头'})`.trim()
   };
 }
 
@@ -633,7 +633,7 @@ function checkOptionConflict(fieldId, optionValue, currentSelections) {
 
   // 2. 空间分类与场景地点互斥 (Space Type & Location)
   const INDOOR_LOCATIONS = [
-    '现代公寓', '极简现代公寓', '厨房', '书房', '卧室', '剧院后台', '走廊',
+    '现代公寓', '极简现代公寓', '恒温室内泳池', '私享日式温泉', '极简落地窗前', '豪华总统套房', '阳光浴室浴缸', '弥漫晨雾浴室', '现代落地窗边', '私人健身房内', '时尚咖啡卡座', '现代轻奢酒店',  '厨房', '书房', '卧室', '剧院后台', '走廊',
     '咖啡馆', '图书馆', '健身空间', '舞蹈空间', '酒店', '工业空间',
     '暗调车库', '复古酒吧', '美术展厅'
   ];
@@ -763,21 +763,37 @@ function checkOptionConflict(fieldId, optionValue, currentSelections) {
 function sampleOptionsRandomly(fieldsList, currentSelections, lockedFields, isFieldActiveFn) {
   const newSelections = { ...currentSelections };
 
+  // 1. 若服装模式未锁定，优先确定 outfit_mode 和 outerwear，确保子选项的分区激活判断基于本轮最新模式
+  const outfitModeField = fieldsList.find(f => f.id === 'outfit_mode');
+  if (outfitModeField && (!lockedFields || !lockedFields['outfit_mode'])) {
+    const opts = outfitModeField.options || ['上下装', '连衣裙', '套装'];
+    newSelections['outfit_mode'] = opts[Math.floor(Math.random() * opts.length)];
+  }
+
+  const outerwearField = fieldsList.find(f => f.id === 'outerwear');
+  if (outerwearField && (!lockedFields || !lockedFields['outerwear'])) {
+    const opts = outerwearField.options || ['无', '西装外套', '针织开衫', '牛仔外套', '皮衣风衣'];
+    newSelections['outerwear'] = opts[Math.floor(Math.random() * opts.length)];
+  }
+
   for (const field of fieldsList) {
-    // 1. 用户已锁定的项，绝对跳过保留
+    if (field.id === 'outfit_mode' || field.id === 'outerwear') {
+      continue; // 已在首轮预先抽样确定
+    }
+    // 1. 已锁定字段跳过
     if (lockedFields && lockedFields[field.id]) {
       continue;
     }
 
-    // 2. 当前分区停用的项，跳过不抽
-    if (isFieldActiveFn && !isFieldActiveFn(field.id)) {
+    // 2. 将正在累积构建的 newSelections 传入激活判定函数，确保时序联动完全准确
+    if (isFieldActiveFn && !isFieldActiveFn(field.id, newSelections)) {
       continue;
     }
 
     const allOptions = [...(field.options || []), ...(field.customOptions || [])];
     if (allOptions.length === 0) continue;
 
-    // 3. 严格过滤掉与已选/已锁项冲突的选项
+    // 3. 严格排查选项互斥
     const validOptions = allOptions.filter(opt => !checkOptionConflict(field.id, opt, newSelections));
     const candidateOptions = validOptions.length > 0 ? validOptions : allOptions;
 
@@ -824,13 +840,13 @@ function directorCoordinateMatch(fieldsList, currentSelections, lockedFields, is
     }
   }
 
-  if (newSelections['theme'] === '泳装写真' && (!lockedFields || !lockedFields['location'])) {
+  if (newSelections['theme'] === '海边度假旅拍' && (!lockedFields || !lockedFields['location'])) {
     newSelections['location'] = '海岸';
   }
-  if (newSelections['theme'] === '电影叙事' && (!lockedFields || !lockedFields['imaging'])) {
-    newSelections['imaging'] = '胶片电影质感';
+  if (newSelections['theme'] === '电影叙事大片' && (!lockedFields || !lockedFields['imaging'])) {
+    newSelections['imaging'] = '电影色彩';
   }
-  if (newSelections['theme'] === '棚拍肖像' && (!lockedFields || !lockedFields['space_type'])) {
+  if (newSelections['theme'] === '韩系极简氛围' && (!lockedFields || !lockedFields['space_type'])) {
     newSelections['space_type'] = '摄影棚';
   }
 
@@ -838,7 +854,8 @@ function directorCoordinateMatch(fieldsList, currentSelections, lockedFields, is
 }
 
 // 导出挂载到全局
-window.XingSeDirector = {
+if (typeof window !== 'undefined') {
+  window.XingSeDirector = {
   assembleChinesePrompt,
   assembleEnglishPrompt,
   sampleOptionsRandomly,
@@ -848,4 +865,14 @@ window.XingSeDirector = {
   getActualSubmitSize,
   getActualSubmitSizeInfo,
   extract7DSignature
-};
+}; }
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    assembleChinesePrompt,
+    assembleEnglishPrompt,
+    sampleOptionsRandomly,
+    directorCoordinateMatch,
+    checkOptionConflict
+  };
+}

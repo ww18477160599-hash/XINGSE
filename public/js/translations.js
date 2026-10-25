@@ -1364,7 +1364,40 @@ const XINGSE_EN_DICT = {
   "无线头戴耳机": "modern sleek wireless over-ear headphones resting around slender neck",
   "复古胶片相机": "vintage 35mm rangefinder camera dangling from leather neck strap",
   "香槟高脚酒杯": "crystal flute glass with effervescent bubbling champagne",
-  "时尚皮质手包": "designer minimalist leather clutch purse held gracefully"
+  "时尚皮质手包": "designer minimalist leather clutch purse held gracefully",
+
+  // 补齐新增主题与张力摄影美学映射
+  "禁欲反差写真": "chaste ascetic visual contrast editorial, serene sensual tension, haute couture restraint",
+  "清冷纯欲反差": "cool aloof pure desire contrast, innocent yet captivating sensual undertones",
+  "硬朗柔美反差": "masculine structural boldness juxtaposed with delicate feminine softness",
+  "私密松弛漫度": "intimate languid indulgence, relaxed unhurried private boudoir mood",
+  "暗涌情绪叙事": "undercurrent emotional narrative, quiet brewing psychological intensity",
+  "健身运动活力": "athletic sporty vitality, sculpted physique, dynamic toned energy",
+  "机车酷飒风范": "biker girl aesthetic, edgy moto chic, sleek rebellious leather attitude",
+  "网球活力写真": "tennis court sporty portrait, vibrant athletic elegance, sunny preppy style",
+  "芭蕾形体韵律": "ballet dancer rhythmic poise, graceful poised silhouette, lyrical lines",
+  "清透自然": "pellucid natural clarity, effortless organic presence",
+  "清冷疏离": "aloof serene detachment, cool distant elegance",
+  "克制留白": "measured restrained negative space, understated minimalist elegance",
+  "温润从容": "gentle composed poise, serene warm equanimity",
+  "松弛慵懒": "effortless languid ease, relaxed nonchalant comfort",
+  "微醺松弛": "subtly intoxicated relaxed ease, dreamy hazy allure",
+  "若即若离": "elusive tantalizing distance, playfully ungraspable presence",
+  "禁欲反差": "ascetic restraint with latent passionate contrast",
+  "纯欲暗涌": "covert sultry undertones beneath virginal innocence",
+  "外刚内柔": "tough resilient exterior harboring tender delicate warmth",
+  "高冷欲态": "imperious haughty detachment laced with magnetic allure",
+  "呼吸感微张力": "delicate organic breathing rhythm with subtle visual tension",
+  "强烈视线张力": "commanding ocular intensity, direct unyielding gaze",
+  "自信舒展": "confident open expansiveness, poised self-assured posture",
+  "视觉张力充沛": "dynamically charged visual magnetism, high aesthetic tension",
+  "复古丝绒": "vintage plush velvet fabric, deep lustrous sheen, rich tactile drape",
+  "纯棉平纹": "pure woven cotton plain weave, natural matte crisp texture",
+  "倚靠陷入受力": "leaning back sinking gently into cushioning support, physical weight and contact",
+  "环境疏离反差": "striking detached visual isolation against the vast ambient surroundings",
+  "明暗高反差": "high-contrast chiaroscuro lighting, dramatic deep shadows and brilliant highlights",
+  "戏剧切割阴影": "dramatic geometric cast shadows, sharp architectural light cuts across subject",
+  "雕刻身体轮廓": "precise rim lighting sculpting anatomical body contours, edge definition"
 };
 
 // 核心转换引擎：无论输入何种中文组合、斜杠多选、自定义词，坚决彻底转换为 100% 纯正英文
