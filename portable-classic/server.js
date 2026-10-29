@@ -110,6 +110,55 @@ function writeJson(file, data) {
   }
 }
 
+function maskKey(k) {
+  if (!k || typeof k !== 'string') return '';
+  if (k.length <= 6) return '••••••';
+  return '••••••••' + k.slice(-4);
+}
+
+function unmaskKey(newVal, oldVal) {
+  // 显式传入 null 表示明确清空该凭证
+  if (newVal === null) return '';
+  // 缺失或类型非 string 时保持原值
+  if (newVal === undefined || typeof newVal !== 'string') return oldVal || '';
+  // 掩码占位符保持原值，绝不覆盖
+  if (isMaskedKey(newVal)) return oldVal || '';
+  return newVal.trim();
+}
+
+function isJsonObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+// 遍历完整设置，包含各 provider 及扩展设置中的 API Key。
+function mapSettingsKeys(value, current, transform) {
+  if (Array.isArray(value)) {
+    return value.map((item, index) => mapSettingsKeys(item, current?.[index], transform));
+  }
+  if (!isJsonObject(value)) return value;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+    key,
+    key === 'apiKey' ? transform(item, current?.[key]) : mapSettingsKeys(item, current?.[key], transform)
+  ]));
+}
+
+function isValidBackup(backup) {
+  if (!isJsonObject(backup) || backup.app !== 'XINGSE' ||
+      typeof backup.version !== 'string' || !backup.version.trim() ||
+      typeof backup.exportedAt !== 'string' || !Number.isFinite(Date.parse(backup.exportedAt)) ||
+      !isJsonObject(backup.settings) || !Array.isArray(backup.presets) ||
+      !isJsonObject(backup['custom-options']) || !Array.isArray(backup.history)) return false;
+  for (const type of ['llm', 'imageGen']) {
+    const section = backup.settings[type];
+    if (section === undefined) continue;
+    if (!isJsonObject(section)) return false;
+    if (section.providers !== undefined && (!isJsonObject(section.providers) ||
+        !Object.values(section.providers).every(isJsonObject))) return false;
+  }
+  return backup.presets.every(isJsonObject) && backup.history.every(isJsonObject) &&
+    Object.values(backup['custom-options']).every(Array.isArray);
+}
+
 // 判断 API Key 是否为前端脱敏占位符 (防止 ByteString 8226 字符报错及空值传递)
 function isMaskedKey(key) {
   if (!key || typeof key !== 'string') return true;
@@ -480,6 +529,55 @@ const server = http.createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
     try {
+      // 全量备份与恢复（写请求统一经过上方客户端安全凭证校验）
+      if (pathname === '/api/backup' && req.method === 'GET') {
+        const backup = {
+          app: 'XINGSE',
+          version: require('./package.json').version,
+          exportedAt: new Date().toISOString(),
+          settings: mapSettingsKeys(readJson(SETTINGS_FILE, {}), null, maskKey),
+          presets: readJson(PRESETS_FILE, []),
+          'custom-options': readJson(CUSTOM_OPTIONS_FILE, {}),
+          history: readJson(HISTORY_FILE, [])
+        };
+        res.writeHead(200);
+        res.end(JSON.stringify(backup));
+        return;
+      }
+
+      if (pathname === '/api/restore' && req.method === 'POST') {
+        let backup;
+        try {
+          backup = await parseRequestBody(req);
+        } catch (err) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: '备份 JSON 格式不合法' }));
+          return;
+        }
+        if (!isValidBackup(backup)) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: '备份数据结构不合法' }));
+          return;
+        }
+        const settings = mapSettingsKeys(backup.settings, readJson(SETTINGS_FILE, {}), unmaskKey);
+        const files = [
+          [SETTINGS_FILE, settings],
+          [PRESETS_FILE, backup.presets],
+          [CUSTOM_OPTIONS_FILE, backup['custom-options']],
+          [HISTORY_FILE, backup.history]
+        ];
+        for (const [file, data] of files) {
+          if (!writeJson(file, data)) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ error: '恢复数据失败，磁盘写入受限' }));
+            return;
+          }
+        }
+        res.writeHead(200);
+        res.end(JSON.stringify({ success: true, message: 'Backup restored' }));
+        return;
+      }
+
       // 1. 获取完整选项数据（合并预设与自定义）
       if (pathname === '/api/options' && req.method === 'GET') {
         const defaultData = readJson(DEFAULT_OPTIONS_FILE, { groups: [] });
@@ -561,12 +659,6 @@ const server = http.createServer(async (req, res) => {
         }
 
         const sanitized = JSON.parse(JSON.stringify(settings));
-        function maskKey(k) {
-          if (!k || typeof k !== 'string') return '';
-          if (k.length <= 6) return '••••••';
-          return '••••••••' + k.slice(-4);
-        }
-
         if (sanitized.llm) {
           sanitized.llm.hasApiKey = !!sanitized.llm.apiKey;
           sanitized.llm.apiKey = maskKey(sanitized.llm.apiKey);
@@ -601,16 +693,6 @@ const server = http.createServer(async (req, res) => {
       if (pathname === '/api/settings' && req.method === 'POST') {
         const body = await parseRequestBody(req);
         const currentSettings = readJson(SETTINGS_FILE, {});
-
-        function unmaskKey(newVal, oldVal) {
-          // 显式传入 null 表示明确清空该凭证
-          if (newVal === null) return '';
-          // 缺失或类型非 string 时保持原值
-          if (newVal === undefined || typeof newVal !== 'string') return oldVal || '';
-          // 掩码占位符保持原值，绝不覆盖
-          if (isMaskedKey(newVal)) return oldVal || '';
-          return newVal.trim();
-        }
 
         // 深度合并设置，保护已有凭证不被漏发字段或脱敏占位符抹除
         const merged = {
