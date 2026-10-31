@@ -108,6 +108,21 @@
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               <span>🎬 搭配</span>
             </button>
+            <div class="variant-launch" title="锁定核心字段后，未锁定项会重抽并连续出图">
+              <label for="variant-count">变体</label>
+              <select id="variant-count" class="form-control form-control-sm variant-count-select" title="一次生成的变体张数，2 到 8">
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4" selected>4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+              </select>
+              <button class="btn btn-primary btn-sm" id="btn-one-click-variants" type="button" title="锁定项保持不变，未锁定项随机重抽并连续生图，可中途取消">
+                <span>一键变体</span>
+              </button>
+            </div>
             <button class="btn btn-secondary btn-sm" id="btn-unlock-all" title="解除当前全部锁定条件">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
               <span>全部解锁</span>
@@ -217,6 +232,15 @@
             </div>
           </div>
 
+          <div class="quality-tier-bar" id="quality-tier-bar" title="去塑料感画质档位。会改写提示词尾缀，并让摄影导演按同一档位写提示词">
+            <span class="quality-tier-label">画质</span>
+            <div class="quality-tier-group" role="group" aria-label="画质档位">
+              <button type="button" class="quality-tier-btn" data-quality-tier="film" title="胶片抓拍：轻微失焦、高光晕开，不用 8K 杰作措辞">胶片抓拍</button>
+              <button type="button" class="quality-tier-btn active" data-quality-tier="commercial" title="商业精修：干净但保留毛孔，默认档">商业精修</button>
+              <button type="button" class="quality-tier-btn" data-quality-tier="extreme" title="极致写实：相机光学和生理皮肤，不要塑料磨皮">极致写实</button>
+            </div>
+          </div>
+
           <textarea id="main-prompt-box" class="main-prompt-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="当前提示词为空。首次打开未锁定任何条件。
 
 • 点击左侧各维度选项或自建选项，将进入上方「锁定池」；
@@ -225,6 +249,14 @@
 • 审核确认后，点击「🚀 生图」提交出图。"></textarea>
 
           <!-- 生图模型快捷切换与就绪条 (无需每次进设置即可随心切换) -->
+          <div class="reference-image-bar" id="reference-image-bar">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-pick-reference" title="可选。千问图像和 GPT-Image 等会带上这张图；不支持的模型会提示后改为纯文字生图">参考图</button>
+            <img id="reference-thumb" class="reference-thumb" alt="参考图缩略图" hidden />
+            <span id="reference-name">未使用参考图</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-reference" hidden>清除</button>
+            <input type="file" id="reference-file-input" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+          </div>
+
           <div class="quick-model-bar" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding:6px 12px; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); font-size:0.8rem;">
             <div style="display:flex; align-items:center; gap:6px; color:var(--text-secondary);">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
@@ -246,6 +278,10 @@
             <button class="btn btn-primary btn-action-match" id="btn-director-match-studio" title="以当前生效的锁定池为硬性条件，由摄影导演搭配设计未锁定维度，生成完整提示词写入上方框中（只生成文字，不自动生图）">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               <span>🎬 搭配</span>
+            </button>
+
+            <button class="btn btn-primary" id="btn-one-click-variants-studio" type="button" title="按锁定池连续生成多张变体：锁定项不动，未锁定项重抽">
+              <span>一键变体</span>
             </button>
 
             <button class="btn btn-accent btn-action-generate" id="btn-generate-image" disabled title="提示词框有非空白文字时才可点击；直接提交上方框内当前文字给生图模型">
@@ -307,7 +343,7 @@
 
             <div class="canvas-loading" id="canvas-loading" style="display:none;">
               <div class="spinner"></div>
-              <div style="font-size:0.85rem; font-weight:600; color:var(--accent-gold-light);">AI 正在精细渲染图像...</div>
+              <div id="canvas-loading-text" style="font-size:0.85rem; font-weight:600; color:var(--accent-gold-light);">AI 正在精细渲染图像...</div>
               <button class="btn btn-secondary btn-sm" id="btn-cancel-generation-canvas" style="margin-top:10px; font-size:0.75rem; padding:4px 12px; border-color:rgba(239, 68, 68, 0.4); color:#fca5a5;">
                 ⏹ 中断取消生成
               </button>

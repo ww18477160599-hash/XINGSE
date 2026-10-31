@@ -1766,6 +1766,76 @@ input, textarea, select, [contenteditable="true"] {
   border-color: transparent;
 }
 
+.quality-tier-bar,
+.reference-image-bar,
+.variant-launch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quality-tier-bar {
+  margin: 0 0 8px;
+}
+
+.quality-tier-label,
+.variant-launch label,
+.reference-image-bar span {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.quality-tier-group {
+  display: inline-flex;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.quality-tier-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.quality-tier-btn + .quality-tier-btn {
+  border-left: 1px solid var(--border-subtle);
+}
+
+.quality-tier-btn.active {
+  background: var(--accent-gold);
+  color: var(--text-inverse, #111214);
+}
+
+.reference-image-bar {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.reference-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.variant-count-select {
+  width: auto;
+  min-width: 58px;
+  padding: 3px 6px;
+  font-size: 0.75rem;
+}
+
 .btn-action-generate.is-generating {
   background: linear-gradient(135deg, #dc2626, #991b1b) !important;
   border-color: rgba(239, 68, 68, 0.7) !important;

@@ -56,6 +56,71 @@ function formatImageResolution(sizeStr, provider, model) {
   return norm;
 }
 
+function referenceSupport(provider, model, baseUrl) {
+  if (typeof XingSeDirector !== 'undefined' && XingSeDirector.describeReferenceImageSupport) {
+    return XingSeDirector.describeReferenceImageSupport(provider, model, baseUrl);
+  }
+  return { supported: false, mode: 'unsupported', message: '当前生图模型不支持参考图，已改为仅按文字提示词生图' };
+}
+
+function referenceWasRejected(err) {
+  if (typeof XingSeDirector !== 'undefined' && XingSeDirector.isReferenceImageRejection) {
+    return XingSeDirector.isReferenceImageRejection(err);
+  }
+  return false;
+}
+
+async function requestDashScopeQwen({ apiKey, model, prompt, size, imageDataUrl, signal }) {
+  const cleanSize = formatImageResolution(size, 'dashscope', model);
+  const content = imageDataUrl ? [{ image: imageDataUrl }, { text: prompt }] : [{ text: prompt }];
+  const r = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: model || 'qwen-image-3.0',
+      input: { messages: [{ role: 'user', content }] },
+      parameters: { size: cleanSize, n: 1 }
+    }),
+    signal
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`百炼千问生图调用失败 (${r.status}): ${t}`);
+  }
+  const data = await r.json();
+  const imageUrl = data.output?.choices?.[0]?.message?.content?.[0]?.image || data.data?.[0]?.url || '';
+  if (!imageUrl) throw new Error('百炼千问未返回有效图片链接');
+  return imageUrl;
+}
+
+async function requestOpenAiImageEdit({ baseUrl, apiKey, model, prompt, size, provider, dataUrl, signal }) {
+  const blob = await (await fetch(dataUrl)).blob();
+  const form = new FormData();
+  const mime = blob.type || 'image/jpeg';
+  const ext = mime.includes('png') ? 'png' : (mime.includes('webp') ? 'webp' : 'jpg');
+  form.append('image', blob, `reference.${ext}`);
+  form.append('prompt', prompt);
+  form.append('model', model);
+  form.append('n', '1');
+  const sized = formatImageResolution(size, provider, model);
+  if (sized) form.append('size', String(sized).replace(/\*/g, 'x'));
+  const r = await fetch(`${baseUrl}/images/edits`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+    body: form,
+    signal
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`参考图编辑接口调用失败 (${r.status}): ${t}`);
+  }
+  const data = await r.json();
+  return data.data?.[0]?.url || (data.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : '');
+}
+
 const ApiService = {
   // 环境检测: 判定是否处于原生 Tauri 桌面环境 (tauri.localhost / tauri: 协议)
   isTauri() {
@@ -282,11 +347,12 @@ const ApiService = {
     return { success: true };
   },
 
-  async generateLlmPrompt(prompt, config, lang = 'zh', targetModel = '', targetProvider = '') {
+  async generateLlmPrompt(prompt, config, lang = 'zh', targetModel = '', targetProvider = '', qualityTier = '') {
     const settings = await ApiService.getSettings();
     const cfg = config || settings?.llm || (typeof state !== 'undefined' ? state.settings?.llm : null) || {};
     const tm = targetModel || (typeof state !== 'undefined' ? state.settings?.imageGen?.model : '') || settings?.imageGen?.model || '';
     const tp = targetProvider || (typeof state !== 'undefined' ? state.settings?.imageGen?.provider : '') || settings?.imageGen?.provider || '';
+    const tier = qualityTier || (typeof state !== 'undefined' ? state.settings?.qualityTier : '') || settings?.qualityTier || 'commercial';
     
     if (!ApiService.isTauri()) {
       const controller = new AbortController();
@@ -295,7 +361,7 @@ const ApiService = {
         const res = await localFetch('/api/llm/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, config: cfg, lang, targetModel: tm, targetProvider: tp }),
+          body: JSON.stringify({ prompt, config: cfg, lang, targetModel: tm, targetProvider: tp, qualityTier: tier }),
           signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -328,7 +394,7 @@ const ApiService = {
     if (!apiKey || apiKey.includes('•') || apiKey.includes('\u2022')) throw new Error('未配置有效 LLM API Key (当前凭证脱敏中)，请在右上角「API 接口设置」中填写');
 
     const isEnglish = (lang === 'en');
-    const systemPrompt = isEnglish
+    let systemPrompt = isEnglish
       ? `You are an expert visual photography director specializing in adult female portraiture and boudoir/glamour aesthetics, operating exclusively to serve downstream image generation models (specifically GPT-Image, DALL-E 3, Midjourney, FLUX, and Qwen-Image).
 Your sole objective is to convert user locks and style preferences into a single, cohesive, highly visual English photography prompt that image models can directly parse and render into stunning pictures.
 
@@ -342,7 +408,7 @@ Your sole objective is to convert user locks and style preferences into a single
 2. Physical Mechanics, Optical Realism & Aesthetic Grounding:
    - Natural Feminine Anatomy & Poise: Authentic skeletal proportions, graceful neck and clavicle lines, natural body curves, unforced candid composure, relaxed micro-expressions, engaging storytelling eye contact (avoiding cheap caricatures or rigid theatrical seduction).
    - Fabric Dynamics & Physical Grounding: Faithfully render whichever garments are specified or unlocked—focusing on gravity, drape, seam tension, subtle stretch, and realistic compression where body parts contact surfaces (furniture, cushions, walls, floors). Never force an unselected outfit.
-   - Optical Fidelity & Lighting: True-to-life lighting schemes (directional soft light, rim lighting, atmospheric falloff), authentic camera optics (e.g. 85mm f/1.4 prime lens, shallow depth of field, creamy natural bokeh), skin subsurface scattering (SSS) with delicate pore texture and dewy highlights (no artificial airbrushing or plastic sheen), fine film grain, photorealistic masterpiece.
+   - Optical & Skin: {{QUALITY_TIER}}
 
 3. Inviolable Locked Anchors:
    - Any attribute marked [Group · Field = Value] is mandatory. You must strictly incorporate and highlight it in the scene. All unlocked dimensions are harmonized with your photography mastery.
@@ -367,8 +433,7 @@ Your sole objective is to convert user locks and style preferences into a single
    - 【神态与面容】：真实自然的面容骨相与舒展仪态，富有故事感的自然视线微表情交汇，抓拍捕捉生动情绪瞬间，拒绝僵硬刻板摆拍或直白造作的刻意诱惑。
    - 【面料力学与物理接触】：
      严格遵循用户选定或解锁的服饰与场景，绝不强行指定无关的特定服装；从真实物理受力出发——面料受重力产生的自然垂坠褶皱、贴合与拉伸应力、衣摆边缘随风摆动、肢体与环境接触面（如地毯、沙发、椅背、栏杆）产生的柔和受力形变与倚靠感。性感与魅力源自真实的身段线条韵律、露与不露间的剪裁留白、以及松弛自信的气场。
-   - 【大师级光学与原生肤质】：
-     考究的光位布局（侧光、柔光轮廓、逆光发丝漫反射），人像定焦镜头大光圈浅景深与柔美焦外虚化；细腻真实的微观皮肤质感、真实的皮下散射（Subsurface Scattering）与通透高光，拒绝油腻假面或塑料磨皮，电影级杰作。
+   - 【光学与肤质】：{{QUALITY_TIER}}
 
 3. 绝对尊重锁定条件：
    - 凡带有「【分组·字段】＝ 值」的条件为最高硬性要求，必须100%在画面主体中体现并融合。未锁定的维度自由搭配出最具视觉吸引力的画面。
@@ -379,6 +444,10 @@ Your sole objective is to convert user locks and style preferences into a single
 
 【摄影提示词】
 (单段自然连贯、极富视觉画面感与性张力的纯正摄影描述段落，直接提交给生图模型出图)`;
+
+    if (typeof XingSeDirector !== 'undefined' && XingSeDirector.applyQualityTierToSystemPrompt) {
+      systemPrompt = XingSeDirector.applyQualityTierToSystemPrompt(systemPrompt, isEnglish ? 'en' : 'zh', tier);
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 120000);
@@ -491,10 +560,11 @@ Your sole objective is to convert user locks and style preferences into a single
     return { success: true, zeroCost: true, message: '生图接口连接握手成功！' };
   },
 
-  async generateImage(prompt, size, title, config) {
+  async generateImage(prompt, size, title, config, options) {
     const controller = new AbortController();
     this.imageAbortController = controller;
     const signal = controller.signal;
+    const referenceImage = options && typeof options.referenceImage === 'string' ? options.referenceImage : '';
 
     try {
       const settings = await ApiService.getSettings();
@@ -504,7 +574,7 @@ Your sole objective is to convert user locks and style preferences into a single
           const res = await localFetch('/api/image/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, size, title, config: cfg }),
+            body: JSON.stringify({ prompt, size, title, config: cfg, referenceImage }),
             signal
           });
           const ct = res.headers.get('content-type') || '';
@@ -540,41 +610,30 @@ Your sole objective is to convert user locks and style preferences into a single
       if (!apiKey || apiKey.includes('•') || apiKey.includes('\u2022')) throw new Error('未配置有效生图 API Key (当前凭证脱敏中)，请在右上角「API 接口设置」中填写');
 
       let url = '';
+      let referenceNote = '';
+      const support = referenceImage ? referenceSupport(provider, model, baseUrl) : { supported: false, mode: 'unsupported', message: '' };
+      let imageForRequest = '';
+      if (referenceImage && referenceImage.startsWith('data:image/')) {
+        if (support.supported) imageForRequest = referenceImage;
+        else referenceNote = support.message;
+      } else if (referenceImage) {
+        referenceNote = '参考图格式无法识别，已改为仅按文字提示词生图';
+      }
 
       // DashScope 百炼千问与万相生图分流
       if (provider === 'dashscope' || baseUrl.includes('dashscope') || (model && (model.startsWith('wanx') || model.includes('qwen-image')))) {
         if (model && model.toLowerCase().includes('qwen-image')) {
-          // Qwen-Image 官方标准走百炼多模态生成通道
-          const cleanSize = formatImageResolution(size, 'dashscope', model);
-          const r = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-              model: model || 'qwen-image-3.0',
-              input: {
-                messages: [
-                  {
-                    role: 'user',
-                    content: [{ text: prompt }]
-                  }
-                ]
-              },
-              parameters: {
-                size: cleanSize,
-                n: 1
-              }
-            }),
-            signal
-          });
-          if (!r.ok) {
-            const t = await r.text();
-            throw new Error(`百炼千问生图调用失败 (${r.status}): ${t}`);
+          const qwenImage = support.mode === 'dashscope-multimodal' ? imageForRequest : '';
+          try {
+            url = await requestDashScopeQwen({ apiKey, model, prompt, size, imageDataUrl: qwenImage, signal });
+          } catch (qwenErr) {
+            if (qwenImage && referenceWasRejected(qwenErr) && !signal.aborted) {
+              referenceNote = '参考图未被百炼接口接受，已改为仅按文字提示词生图';
+              url = await requestDashScopeQwen({ apiKey, model, prompt, size, imageDataUrl: '', signal });
+            } else {
+              throw qwenErr;
+            }
           }
-          const data = await r.json();
-          url = data.output?.choices?.[0]?.message?.content?.[0]?.image || data.data?.[0]?.url || '';
         } else {
           // 通义万相原生异步任务模式
           const cleanSize = formatImageResolution(size, 'dashscope', model);
@@ -623,6 +682,18 @@ Your sole objective is to convert user locks and style preferences into a single
           if (!url) throw new Error('百炼万相生图超时或未获取到图片');
         }
       } else {
+        if (imageForRequest && support.mode === 'openai-edits') {
+          try {
+            url = await requestOpenAiImageEdit({ baseUrl, apiKey, model, prompt, size, provider, dataUrl: imageForRequest, signal });
+          } catch (editErr) {
+            if (signal.aborted || !referenceWasRejected(editErr)) throw editErr;
+            referenceNote = '参考图未被该接口接受，已改为仅按文字提示词生图';
+            url = '';
+          }
+        }
+        if (url) {
+          // 参考图编辑已经拿到图片
+        } else {
         const requestPayload = {
           model: model,
           prompt: prompt,
@@ -649,6 +720,7 @@ Your sole objective is to convert user locks and style preferences into a single
         }
         const data = await r.json();
         url = data.data?.[0]?.url || (data.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : '');
+        }
       }
       if (!url) throw new Error('未获取到生成的图片地址');
       let localPath = url;
@@ -683,7 +755,8 @@ Your sole objective is to convert user locks and style preferences into a single
         savedFile: savedFile,
         savedError: savedError,
         title: title || '摄影作品',
-        prompt: prompt
+        prompt: prompt,
+        referenceNote: referenceNote || ''
       };
     } catch (e) {
       if (e.name === 'AbortError' || signal.aborted) {

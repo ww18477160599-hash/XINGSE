@@ -152,8 +152,168 @@ const EN_TERMS_MAP = {
   '深度层次': 'deep depth of field layers, layered framing'
 };
 
+// 去塑料感画质档位。默认商业精修：干净但保留毛孔，不用 8K 杰作堆词。
+const DEFAULT_QUALITY_TIER = 'commercial';
+let activeQualityTier = DEFAULT_QUALITY_TIER;
+
+const QUALITY_TIERS = {
+  film: {
+    id: 'film',
+    label: '胶片抓拍',
+    zhSkin: '肤质停留在胶片抓拍里：毛孔、轻微色差和细小瑕疵都还在，没有磨皮，也没有蜡状高光。',
+    zhCamera: '机位像随手抓拍，轻微失焦，高光有一点晕开，颗粒细，曝光并不完美。',
+    zhTail: '画质档位是胶片抓拍：35mm 或 50mm 定焦，轻微失焦，高光晕开，细颗粒，皮肤未修。',
+    enLead: [
+      'candid film snapshot',
+      'shot on 35mm film',
+      '50mm prime lens',
+      'slight misfocus',
+      'gentle highlight bloom',
+      'fine film grain',
+      'imperfect available-light exposure'
+    ],
+    enSkin: (skin) => `unretouched skin with visible pores and slight color variation, ${skin}, fine film grain, not airbrushed`,
+    enTail: 'film snapshot rendering, soft unsharpened detail, highlight bloom, unretouched skin',
+    systemZh: '【画质档位：胶片抓拍】用相机和胶片语言写画面：随手抓拍、轻微失焦、高光晕开、细颗粒、不完美曝光。皮肤只写真实毛孔和轻微瑕疵。禁止输出「8K」「超高清」「杰作」「大师级锐利」「零毛孔」「磨皮」「杜绝塑料」这类会把皮肤写成蜡像的词。',
+    systemEn: '[QUALITY TIER: film snapshot] Write camera and film language only: candid snapshot, slight misfocus, highlight bloom, fine grain, imperfect exposure. Describe real pores and small imperfections. Do not write 8k, masterpiece, hyper-detailed, zero pores, airbrushed, or stacked anti-plastic negations that push waxy oversharpening.'
+  },
+  commercial: {
+    id: 'commercial',
+    label: '商业精修',
+    zhSkin: '肤质干净，但仍看得见毛孔和细微纹理，修图克制，没有蜡感，也没有瓷器皮肤。',
+    zhCamera: '光影受控，色彩克制，焦点清楚但不过度锐化，焦外自然。',
+    zhTail: '画质档位是商业精修：干净、受控、色彩克制，皮肤保留毛孔，焦点清楚但不超锐。',
+    enLead: [
+      'commercial portrait photography',
+      'controlled soft lighting',
+      'restrained color grade',
+      'sharp but not oversharpened'
+    ],
+    enSkin: (skin) => `natural skin texture with visible pores, light commercial retouch, ${skin}, not waxy`,
+    enTail: 'balanced commercial finish, clean controlled light, retained skin texture, restrained retouch',
+    systemZh: '【画质档位：商业精修】这是默认档。写成平衡的商业成片：光位干净、色彩克制、焦点清楚但不超锐。皮肤保留毛孔和细微纹理，只做轻度修饰。不要写「8K 超清杰作」，也不要堆砌「零塑料磨皮」这类和写实互相打架的否定句。',
+    systemEn: '[QUALITY TIER: commercial polish] This is the default. Write a balanced commercial portrait: controlled light, restrained color, sharp but not oversharpened. Keep pores and micro texture with light retouching. Do not demand 8k masterpiece wording or stacked zero-plastic negations.'
+  },
+  extreme: {
+    id: 'extreme',
+    label: '极致写实',
+    zhSkin: '肤质是实拍的生理纹理：毛孔、绒毛、轻微色差和皮下散射都在，没有磨皮，也没有蜡像高光。',
+    zhCamera: '像中画幅或全画幅定焦实拍：焦外自然，高光顺着镜头滚降，不要数码超锐。',
+    zhTail: '画质档位是极致写实：真实镜头光学，生理级皮肤纹理，高光自然滚降，不要磨皮，不要蜡像皮肤。',
+    enLead: [
+      'photoreal photograph',
+      'medium format camera',
+      'natural lens rendering',
+      'optical highlight rolloff',
+      'uncorrected micro contrast'
+    ],
+    enSkin: (skin) => `physiological skin with visible pores, vellus hair and real subsurface scattering, ${skin}, unsmoothed`,
+    enTail: 'extreme photoreal camera capture, real skin microstructure, natural optics, unsmoothed skin',
+    systemZh: '【画质档位：极致写实】用实拍相机语言写极致真实：定焦光学、焦外、高光滚降、生理级皮肤（毛孔、绒毛、色差、皮下散射）。可以强调真实，但禁止「8K」「杰作」「超清锐化」「磨皮」「塑料皮肤」「蜡像」。用正面的相机和皮肤描述，不要用否定句堆砌「零塑料」。',
+    systemEn: '[QUALITY TIER: extreme photoreal] Use strong camera language without plastic smoothing: prime-lens optics, natural bokeh, highlight rolloff, physiological skin (pores, vellus, color variation, subsurface scattering). Do not write 8k, masterpiece, hyper-sharpened, airbrushed, waxy, or plastic skin. Prefer positive optical description.'
+  }
+};
+
+function normalizeQualityTier(tier) {
+  const id = String(tier || '').trim().toLowerCase();
+  if (id === 'film' || id === 'snapshot' || tier === '胶片抓拍') return 'film';
+  if (id === 'extreme' || id === 'photoreal' || tier === '极致写实') return 'extreme';
+  if (id === 'commercial' || id === 'polish' || tier === '商业精修') return 'commercial';
+  return DEFAULT_QUALITY_TIER;
+}
+
+function setQualityTier(tier) {
+  activeQualityTier = normalizeQualityTier(tier);
+  return activeQualityTier;
+}
+
+function getQualityTier() {
+  return activeQualityTier;
+}
+
+function resolveQualityTier(tier) {
+  const id = (tier === undefined || tier === null || tier === '')
+    ? activeQualityTier
+    : normalizeQualityTier(tier);
+  return QUALITY_TIERS[id] || QUALITY_TIERS.commercial;
+}
+
+function qualityTierUserHint(lang, tier) {
+  const item = resolveQualityTier(tier);
+  if (lang === 'en') return `[Quality tier the prompt must obey]\n${item.systemEn}`;
+  return `【本次画质档位，提示词必须遵守】\n${item.systemZh}`;
+}
+
+function applyQualityTierToSystemPrompt(systemPrompt, lang, qualityTier) {
+  const item = resolveQualityTier(qualityTier);
+  const directive = (lang === 'en') ? item.systemEn : item.systemZh;
+  let text = String(systemPrompt || '');
+  if (text.includes('{{QUALITY_TIER}}')) {
+    text = text.split('{{QUALITY_TIER}}').join(directive);
+  }
+  const enPlastic = /Optical Fidelity & Lighting:[\s\S]*?photorealistic masterpiece\./;
+  const zhPlastic = /【大师级光学与原生肤质】：[\s\S]*?电影级杰作。/;
+  if (lang === 'en' && enPlastic.test(text)) {
+    text = text.replace(enPlastic, `Optical & Skin: ${directive}`);
+  }
+  if (lang !== 'en' && zhPlastic.test(text)) {
+    text = text.replace(zhPlastic, `【光学与肤质】：${directive}`);
+  }
+  const marker = lang === 'en' ? '[QUALITY TIER:' : '【画质档位：';
+  if (!text.includes(marker)) {
+    text += `\n\n${directive}`;
+  }
+  return text;
+}
+
+// 哪些生图通道真的能带上参考图。不支持时调用方应提示中文原因并退回纯文字。
+function describeReferenceImageSupport(provider, model, baseUrl) {
+  const m = String(model || '').toLowerCase();
+  const p = String(provider || '').toLowerCase();
+  const b = String(baseUrl || '').toLowerCase();
+  const isDash = p === 'dashscope' || b.includes('dashscope') || m.includes('qwen-image') || m.startsWith('wanx');
+
+  if (m.includes('qwen-image')) {
+    return { supported: true, mode: 'dashscope-multimodal', message: '' };
+  }
+  if (isDash && (m.startsWith('wanx') || m.includes('wanx'))) {
+    return {
+      supported: false,
+      mode: 'unsupported',
+      message: '通义万相文生图不接收参考图，已改为仅按文字提示词生图'
+    };
+  }
+  if (isDash && (p === 'dashscope' || b.includes('dashscope')) && (!m || m.includes('qwen'))) {
+    return { supported: true, mode: 'dashscope-multimodal', message: '' };
+  }
+
+  const canEdit = m.includes('gpt-image') || m.includes('dall-e-2') || m.includes('dalle-2') ||
+    m.includes('kontext') || m.includes('image-edit') || m.includes('img2img');
+  if (canEdit) {
+    return { supported: true, mode: 'openai-edits', message: '' };
+  }
+
+  let message = '当前生图模型不支持参考图，已改为仅按文字提示词生图';
+  if (m.includes('dall-e-3') || m.includes('dalle-3')) {
+    message = 'DALL·E 3 不支持参考图，已改为仅按文字提示词生图';
+  } else if (m.includes('flux') || m.includes('stable-diffusion') || m.includes('sdxl')) {
+    message = '该 FLUX / 扩散接口只支持文字生图，参考图未发送，已按文字提示词继续';
+  }
+  return { supported: false, mode: 'unsupported', message };
+}
+
+function isReferenceImageRejection(err) {
+  const msg = String((err && err.message) || err || '');
+  if (/取消|abort/i.test(msg)) return false;
+  if (/\(401\)|\(402\)|\(403\)|\(429\)|\(500\)|\(502\)|\(503\)/.test(msg)) return false;
+  if (/无法组装参考图/.test(msg)) return true;
+  if (/\(400\)|\(404\)|\(415\)|\(422\)/.test(msg)) return true;
+  return /unsupported image|invalid image|unknown parameter|multipart\/form-data|reference image|does not support image/i.test(msg);
+}
+
 // 拼接中文摄影导演提示词（全维度动态严密无遗漏注入）
-function assembleChinesePrompt(selections, optionsMap) {
+function assembleChinesePrompt(selections, optionsMap, qualityTier) {
+  const tier = resolveQualityTier(qualityTier);
   const parts = [];
 
   // 1. 创作基调与人物身份 (Identity)
@@ -186,7 +346,7 @@ function assembleChinesePrompt(selections, optionsMap) {
     faceDesc = faceFeatures.length > 0 ? `五官生动协调，眉眼间展现出${faceFeatures.join('、')}` : '';
   }
 
-  let identityDesc = `一幅呈现「${theme}」的高级女性人像写真摄影作品，画幅为「${ar}」，景别为「${framing}」，整体氛围流露着「${tension}」的视觉吸引力。出镜女性约${age}，${ancestry}面貌特征，骨相呈${bone || '精致立体骨骼'}，脸部为协调的${faceShape}。${faceDesc}。真实细腻的原生皮肤质感，微孔与次表面微光自然通透，健康透润的${skinTone}血色，保留${skinChar}真实生理细节，彻底杜绝塑料磨皮假面或瓷娃娃感，散发自然鲜活的原生微光。`;
+  let identityDesc = `一幅呈现「${theme}」的高级女性人像写真摄影作品，画幅为「${ar}」，景别为「${framing}」，整体氛围流露着「${tension}」的视觉吸引力。出镜女性约${age}，${ancestry}面貌特征，骨相呈${bone || '精致立体骨骼'}，脸部为协调的${faceShape}。${faceDesc}。健康透润的${skinTone}血色，保留${skinChar}。${tier.zhSkin}`;
   parts.push(identityDesc);
 
   // 2. 身材形体解剖与比例 (Body - 全维度注入)
@@ -360,14 +520,16 @@ function assembleChinesePrompt(selections, optionsMap) {
   camDetails.push(`运用${composition}`);
   camDetails.push(`成像色彩风格为「${imaging}」`);
 
-  let camBlock = `采用${camDetails.join('，')}。光学焦外散景如奶油般柔美化开，焦点内发丝、睫毛与织物纤维极致锐利通透，色彩反差自然，大师级光影构图与电影质感。${notes ? '（' + notes + '）' : ''}`;
+  let camBlock = `采用${camDetails.join('，')}。${tier.zhCamera}${notes ? '（' + notes + '）' : ''}`;
   parts.push(camBlock);
+  parts.push(tier.zhTail);
 
   return parts.join('\n\n');
 }
 
 // 拼接英文 AI 生图提示词 (Diffusion / Flux - 85 字段精准英文翻译全注入，绝无中文夹杂)
-function assembleEnglishPrompt(selections) {
+function assembleEnglishPrompt(selections, qualityTier) {
+  const tier = resolveQualityTier(qualityTier);
   const toEnSafe = (typeof toEn === 'function') ? toEn : (val => {
     if (typeof window !== 'undefined' && window.toEn) return window.toEn(val);
     if (typeof XINGSE_EN_DICT !== 'undefined' && XINGSE_EN_DICT[val]) return XINGSE_EN_DICT[val];
@@ -375,14 +537,9 @@ function assembleEnglishPrompt(selections) {
   });
 
   const tags = [
-    'masterpiece',
-    'award-winning glamour portrait photography',
+    'portrait photography of an adult woman',
     'sensual tension',
-    'hyper-detailed cinematic portrait of an alluring adult woman',
-    'shot on Hasselblad H6D-100c',
-    'medium format camera',
-    'sharp focus',
-    'natural film grain'
+    ...tier.enLead
   ];
 
   // 1. 创作基调与风格主题
@@ -414,9 +571,8 @@ function assembleEnglishPrompt(selections) {
   }
   if (selections['skin_tone']) tags.push(toEnSafe(selections['skin_tone']));
   
-  // 核心微观皮肤光学表征：细腻原生毛孔、次表面散射、自然微瑕，坚决杜绝塑料磨皮
   const skinChar = selections['skin_character'] ? toEnSafe(selections['skin_character']) : 'authentic skin physiology';
-  tags.push(`authentic human physiological skin texture, visible microscopic pores, delicate vellus peach fuzz in rim light, soft translucent subsurface scattering (SSS), natural skin translucency, dewy perspiration sheen, ${skinChar}, zero plastic doll smoothing, zero airbrushed CGI artifacts, raw optical medium-format capture`);
+  tags.push(tier.enSkin(skinChar));
 
   // 3. 身材比例
   if (selections['figure']) tags.push(toEnSafe(selections['figure']));
@@ -559,7 +715,7 @@ function assembleEnglishPrompt(selections) {
     }
   }
 
-  tags.push('8k resolution, highly detailed, photorealistic, natural creamy bokeh');
+  tags.push(tier.enTail);
 
   // 10. 终极绝对无中文字符防线：严格滤除任何中文字符与空项
   const cleanTags = tags
@@ -759,7 +915,7 @@ function checkOptionConflict(fieldId, optionValue, currentSelections) {
   return null;
 }
 
-// 库内随机采样（严格保留用户已锁定项，仅重抽生效分区的未锁定项，抽中结果绝不自动加锁，且严格规避逻辑冲突）
+// 唯一的未锁定字段抽样。锁定项原样保留，候选先过 checkOptionConflict。
 function sampleOptionsRandomly(fieldsList, currentSelections, lockedFields, isFieldActiveFn) {
   const newSelections = { ...currentSelections };
 
@@ -864,7 +1020,17 @@ if (typeof window !== 'undefined') {
   ASPECT_RATIO_SIZE_MAP,
   getActualSubmitSize,
   getActualSubmitSizeInfo,
-  extract7DSignature
+  extract7DSignature,
+  QUALITY_TIERS,
+  DEFAULT_QUALITY_TIER,
+  normalizeQualityTier,
+  setQualityTier,
+  getQualityTier,
+  resolveQualityTier,
+  qualityTierUserHint,
+  applyQualityTierToSystemPrompt,
+  describeReferenceImageSupport,
+  isReferenceImageRejection
 }; }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -873,6 +1039,16 @@ if (typeof module !== 'undefined' && module.exports) {
     assembleEnglishPrompt,
     sampleOptionsRandomly,
     directorCoordinateMatch,
-    checkOptionConflict
+    checkOptionConflict,
+    QUALITY_TIERS,
+    DEFAULT_QUALITY_TIER,
+    normalizeQualityTier,
+    setQualityTier,
+    getQualityTier,
+    resolveQualityTier,
+    qualityTierUserHint,
+    applyQualityTierToSystemPrompt,
+    describeReferenceImageSupport,
+    isReferenceImageRejection
   };
 }
