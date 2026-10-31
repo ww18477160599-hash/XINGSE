@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
+const XingSeDirector = require('./public/js/director.js');
 
 const PORT = parseInt(process.env.PORT, 10) || 3721;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
@@ -354,7 +355,7 @@ function formatImageResolution(sizeStr, provider, model) {
 // 阿里云百炼 (DashScope) 智能生图分流调度:
 // 1. Qwen-Image 系列 (qwen-image-3.0, qwen-image-3.0-pro 等) 走百炼多模态生成通道 /api/v1/services/aigc/multimodal-generation/generation
 // 2. 通义万相系列 (wanx2.1-t2i-turbo, wanx2.1-t2i-plus 等) 走百炼原生异步任务服务 /api/v1/services/aigc/text2image/image-synthesis
-async function callDashScopeImageTask({ apiKey, model, prompt, size }) {
+async function callDashScopeImageTask({ apiKey, model, prompt, size, referenceImage }) {
   const targetModel = model || 'qwen-image-3.0';
   const isQwenImage = targetModel.toLowerCase().includes('qwen-image');
 
@@ -375,7 +376,9 @@ async function callDashScopeImageTask({ apiKey, model, prompt, size }) {
           messages: [
             {
               role: 'user',
-              content: [{ text: prompt }]
+              content: (referenceImage && String(referenceImage).startsWith('data:image/'))
+                ? [{ image: referenceImage }, { text: prompt }]
+                : [{ text: prompt }]
             }
           ]
         },
@@ -479,6 +482,50 @@ async function callDashScopeImageTask({ apiKey, model, prompt, size }) {
   }
 
   throw new Error('阿里云百炼生图任务超时 (已等待120秒)');
+}
+
+function imageUrlFromOpenAiPayload(data) {
+  if (!data) return '';
+  if (data.data && data.data.length > 0) {
+    const item = data.data[0];
+    return item.url || (item.b64_json ? `data:image/png;base64,${item.b64_json}` : '');
+  }
+  if (data.images && data.images.length > 0) {
+    const item = data.images[0];
+    return item.url || (item.b64_json ? `data:image/png;base64,${item.b64_json}` : '');
+  }
+  return '';
+}
+
+async function callOpenAiImageEdit({ baseUrl, apiKey, model, prompt, size, provider, dataUrl }) {
+  const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/.exec(dataUrl || '');
+  if (!match) throw new Error('参考图数据无效');
+  const mime = match[1];
+  const buffer = Buffer.from(match[2], 'base64');
+  if (typeof FormData !== 'function' || typeof Blob !== 'function') {
+    throw new Error('当前 Node 运行时无法组装参考图请求');
+  }
+  const form = new FormData();
+  const ext = mime.includes('png') ? 'png' : (mime.includes('webp') ? 'webp' : 'jpg');
+  form.append('image', new Blob([buffer], { type: mime }), `reference.${ext}`);
+  form.append('prompt', prompt || '');
+  form.append('model', model || 'gpt-image-1');
+  form.append('n', '1');
+  const sized = formatImageResolution(size, provider, model);
+  if (sized) form.append('size', String(sized).replace(/\*/g, 'x'));
+  const response = await fetch(`${baseUrl}/images/edits`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+    body: form
+  });
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`参考图编辑接口调用失败 (${response.status}): ${errText}`);
+  }
+  const data = await response.json();
+  const imageUrl = imageUrlFromOpenAiPayload(data);
+  if (!imageUrl) throw new Error('参考图编辑接口未返回图片');
+  return { imageUrl, raw: data };
 }
 
 const server = http.createServer(async (req, res) => {
@@ -928,8 +975,8 @@ const server = http.createServer(async (req, res) => {
         }
 
         // 识别目标生图模型的类型规范 (Engine Profiler: 适配 GPT-Image / 千问 / FLUX / SD / MJ)
-        const targetModel = (body.targetModel || cfg.targetModel || readJson(SETTINGS_FILE, {}).imageGen?.model || '').toLowerCase();
-        const targetProvider = (body.targetProvider || cfg.targetProvider || readJson(SETTINGS_FILE, {}).imageGen?.provider || '').toLowerCase();
+        const targetModel = (body.targetModel || readJson(SETTINGS_FILE, {}).imageGen?.model || '').toLowerCase();
+        const targetProvider = (body.targetProvider || readJson(SETTINGS_FILE, {}).imageGen?.provider || '').toLowerCase();
 
         let engineType = 'gpt_image';
         if (targetModel.includes('qwen-image') || targetModel.startsWith('wanx') || targetProvider === 'dashscope') {
@@ -939,7 +986,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         const isEnglish = (lang === 'en');
-        const systemPrompt = isEnglish
+        let systemPrompt = isEnglish
           ? `You are an expert visual photography director specializing in adult female portraiture and boudoir/glamour aesthetics, operating exclusively to serve downstream image generation models (specifically GPT-Image, DALL-E 3, Midjourney, FLUX, and Qwen-Image).
 Your sole objective is to convert user locks and style preferences into a single, cohesive, highly visual English photography prompt that image models can directly parse and render into stunning pictures.
 
@@ -953,7 +1000,7 @@ Your sole objective is to convert user locks and style preferences into a single
 2. Physical Mechanics, Optical Realism & Aesthetic Grounding:
    - Natural Feminine Anatomy & Poise: Authentic skeletal proportions, graceful neck and clavicle lines, natural body curves, unforced candid composure, relaxed micro-expressions, engaging storytelling eye contact (avoiding cheap caricatures or rigid theatrical seduction).
    - Fabric Dynamics & Physical Grounding: Faithfully render whichever garments are specified or unlocked—focusing on gravity, drape, seam tension, subtle stretch, and realistic compression where body parts contact surfaces (furniture, cushions, walls, floors). Never force an unselected outfit.
-   - Optical Fidelity & Lighting: True-to-life lighting schemes (directional soft light, rim lighting, atmospheric falloff), authentic camera optics (e.g. 85mm f/1.4 prime lens, shallow depth of field, creamy natural bokeh), skin subsurface scattering (SSS) with delicate pore texture and dewy highlights (no artificial airbrushing or plastic sheen), fine film grain, photorealistic masterpiece.
+   - Optical & Skin: {{QUALITY_TIER}}
 
 3. Inviolable Locked Anchors:
    - Any attribute marked [Group · Field = Value] is mandatory. You must strictly incorporate and highlight it in the scene. All unlocked dimensions are harmonized with your photography mastery.
@@ -978,8 +1025,7 @@ Your sole objective is to convert user locks and style preferences into a single
    - 【神态与面容】：真实自然的面容骨相与舒展仪态，富有故事感的自然视线微表情交汇，抓拍捕捉生动情绪瞬间，拒绝僵硬刻板摆拍或直白造作的刻意诱惑。
    - 【面料力学与物理接触】：
      严格遵循用户选定或解锁的服饰与场景，绝不强行指定无关的特定服装；从真实物理受力出发——面料受重力产生的自然垂坠褶皱、贴合与拉伸应力、衣摆边缘随风摆动、肢体与环境接触面（如地毯、沙发、椅背、栏杆）产生的柔和受力形变与倚靠感。性感与魅力源自真实的身段线条韵律、露与不露间的剪裁留白、以及松弛自信的气场。
-   - 【大师级光学与原生肤质】：
-     考究的光位布局（侧光、柔光轮廓、逆光发丝漫反射），人像定焦镜头大光圈浅景深与柔美焦外虚化；细腻真实的微观皮肤质感、真实的皮下散射（Subsurface Scattering）与通透高光，拒绝油腻假面或塑料磨皮，电影级杰作。
+   - 【光学与肤质】：{{QUALITY_TIER}}
 
 3. 绝对尊重锁定条件：
    - 凡带有「【分组·字段】＝ 值」的条件为最高硬性要求，必须100%在画面主体中体现并融合。未锁定的维度自由搭配出最具视觉吸引力的画面。
@@ -990,6 +1036,9 @@ Your sole objective is to convert user locks and style preferences into a single
 
 【摄影提示词】
 (单段自然连贯、极富视觉画面感与性张力的纯正摄影描述段落，直接提交给生图模型出图)`;
+
+        const qualityTier = body.qualityTier || savedSettings.qualityTier || 'commercial';
+        systemPrompt = XingSeDirector.applyQualityTierToSystemPrompt(systemPrompt, isEnglish ? 'en' : 'zh', qualityTier);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 120000); // 120秒超时，充裕支持大模型深度构思
@@ -1306,62 +1355,109 @@ Your sole objective is to convert user locks and style preferences into a single
         let elapsedMs = 0;
         let data = null;
         let imageUrl = '';
+        let referenceNote = '';
+        const rawReference = typeof body.referenceImage === 'string' ? body.referenceImage : '';
+        const support = rawReference
+          ? XingSeDirector.describeReferenceImageSupport(provider, model, baseUrl)
+          : { supported: false, mode: 'unsupported', message: '' };
+        let referenceImage = '';
+        if (rawReference && rawReference.startsWith('data:image/')) {
+          if (support.supported) referenceImage = rawReference;
+          else referenceNote = support.message;
+        } else if (rawReference) {
+          referenceNote = '参考图格式无法识别，已改为仅按文字提示词生图';
+        }
 
         const isDash = provider === 'dashscope' || baseUrl.includes('dashscope.aliyuncs.com') || (model && (model.toLowerCase().includes('qwen-image') || model.toLowerCase().startsWith('wanx')));
 
         if (isDash) {
-          // 阿里云百炼千问生图与通义万相异步任务生图
-          const dashRes = await callDashScopeImageTask({
-            apiKey,
-            model: model || 'qwen-image-3.0',
-            prompt: prompt,
-            size: size
-          });
-          imageUrl = dashRes.imageUrl;
-          data = dashRes.raw;
+          const dashReference = support.mode === 'dashscope-multimodal' ? referenceImage : '';
+          try {
+            const dashRes = await callDashScopeImageTask({
+              apiKey,
+              model: model || 'qwen-image-3.0',
+              prompt: prompt,
+              size: size,
+              referenceImage: dashReference
+            });
+            imageUrl = dashRes.imageUrl;
+            data = dashRes.raw;
+          } catch (dashErr) {
+            if (dashReference && XingSeDirector.isReferenceImageRejection(dashErr)) {
+              referenceNote = '参考图未被百炼接口接受，已改为仅按文字提示词生图';
+              const dashRes = await callDashScopeImageTask({
+                apiKey,
+                model: model || 'qwen-image-3.0',
+                prompt: prompt,
+                size: size
+              });
+              imageUrl = dashRes.imageUrl;
+              data = dashRes.raw;
+            } else {
+              throw dashErr;
+            }
+          }
           elapsedMs = Date.now() - startTime;
         } else {
-          const targetUrl = `${baseUrl}/images/generations`;
-          const requestPayload = {
-            model: model,
-            prompt: prompt,
-            n: 1
-          };
-
-          if (provider === 'siliconflow' || baseUrl.includes('siliconflow')) {
-            requestPayload.image_size = formatImageResolution(size, 'siliconflow', model);
-          } else {
-            requestPayload.size = formatImageResolution(size, provider, model);
+          if (referenceImage && support.mode === 'openai-edits') {
+            try {
+              const edited = await callOpenAiImageEdit({
+                baseUrl, apiKey, model, prompt, size, provider, dataUrl: referenceImage
+              });
+              imageUrl = edited.imageUrl;
+              data = edited.raw;
+            } catch (editErr) {
+              if (!XingSeDirector.isReferenceImageRejection(editErr)) {
+                elapsedMs = Date.now() - startTime;
+                res.writeHead(502);
+                res.end(JSON.stringify({
+                  error: editErr.message,
+                  model,
+                  elapsedMs
+                }));
+                return;
+              }
+              referenceNote = '参考图未被该接口接受，已改为仅按文字提示词生图';
+            }
           }
 
-          let response = await fetch(targetUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify(requestPayload)
-          });
+          if (!imageUrl) {
+            const targetUrl = `${baseUrl}/images/generations`;
+            const requestPayload = {
+              model: model,
+              prompt: prompt,
+              n: 1
+            };
 
-          elapsedMs = Date.now() - startTime;
-          if (!response.ok) {
-            const errText = await response.text();
-            res.writeHead(response.status);
-            res.end(JSON.stringify({
-              error: `生图 API 请求失败 (${response.status}): ${errText}`,
-              model,
-              elapsedMs
-            }));
-            return;
-          }
+            if (provider === 'siliconflow' || baseUrl.includes('siliconflow')) {
+              requestPayload.image_size = formatImageResolution(size, 'siliconflow', model);
+            } else {
+              requestPayload.size = formatImageResolution(size, provider, model);
+            }
 
-          data = await response.json();
-          if (data.data && data.data.length > 0) {
-            const item = data.data[0];
-            imageUrl = item.url || (item.b64_json ? `data:image/png;base64,${item.b64_json}` : '');
-          } else if (data.images && data.images.length > 0) {
-            const item = data.images[0];
-            imageUrl = item.url || (item.b64_json ? `data:image/png;base64,${item.b64_json}` : '');
+            let response = await fetch(targetUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+              },
+              body: JSON.stringify(requestPayload)
+            });
+
+            elapsedMs = Date.now() - startTime;
+            if (!response.ok) {
+              const errText = await response.text();
+              res.writeHead(response.status);
+              res.end(JSON.stringify({
+                error: `生图 API 请求失败 (${response.status}): ${errText}`,
+                model,
+                elapsedMs
+              }));
+              return;
+            }
+
+            data = await response.json();
+            imageUrl = imageUrlFromOpenAiPayload(data);
           }
         }
 
@@ -1407,7 +1503,8 @@ Your sole objective is to convert user locks and style preferences into a single
           savedFile: savedSuccess ? fileName : null,
           savedPath: savedSuccess ? localFilePath : null,
           savedError: savedSuccess ? null : savedError,
-          localUrl: savedSuccess ? `/api/image-file?path=${encodeURIComponent(localFilePath)}` : null
+          localUrl: savedSuccess ? `/api/image-file?path=${encodeURIComponent(localFilePath)}` : null,
+          referenceNote: referenceNote || null
         }));
         return;
       }
